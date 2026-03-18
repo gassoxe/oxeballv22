@@ -1,0 +1,745 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<script src="/api.js"></script>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>OXE BALL — Admin</title>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&family=Share+Tech+Mono&display=swap" rel="stylesheet"/>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#02020a;--card:#07071a;--border:#1e1e44;
+  --ox:#ff6a00;--ox2:#ff9a00;--purple:#9933ff;--cyan:#00d4ff;
+  --text:#aabbcc;--dim:#3344aa;--red:#ff4433;--green:#00ee77;
+  --gold:#f0c040;
+}
+html,body{min-height:100vh;background:var(--bg);font-family:'Orbitron',sans-serif;color:var(--text);}
+body{display:flex;flex-direction:column;}
+
+/* ── Login screen ── */
+#login-screen{
+  flex:1;display:flex;align-items:center;justify-content:center;padding:20px;
+}
+#login-card{
+  width:100%;max-width:340px;background:#07071a;
+  border:1px solid var(--border);border-radius:16px;padding:28px 22px;
+  box-shadow:0 0 40px rgba(100,50,255,.15);
+}
+.admin-logo{font-size:20px;font-weight:900;letter-spacing:3px;color:var(--ox2);
+  text-shadow:0 0 14px var(--ox);text-align:center;margin-bottom:4px;}
+.admin-logo span{color:#fff;}
+.admin-sub{font-size:8px;color:var(--dim);letter-spacing:2px;text-align:center;margin-bottom:20px;}
+.pw-wrap{position:relative;}
+.pw-wrap input{
+  width:100%;background:rgba(255,60,0,.04);border:1px solid rgba(255,106,0,.2);
+  color:#ddaa88;font-family:'Share Tech Mono',monospace;font-size:13px;
+  padding:10px 40px 10px 12px;border-radius:8px;outline:none;transition:.15s;
+}
+.pw-wrap input:focus{border-color:var(--ox);box-shadow:0 0 0 2px rgba(255,106,0,.12);}
+.pw-wrap .eye{
+  position:absolute;right:10px;top:50%;transform:translateY(-50%);
+  background:none;border:none;color:rgba(255,106,0,.35);cursor:pointer;font-size:15px;
+}
+#login-err{
+  font-size:10px;color:var(--red);font-family:'Share Tech Mono',monospace;
+  text-align:center;margin:8px 0;display:none;
+}
+.login-btn{
+  width:100%;margin-top:12px;
+  background:linear-gradient(135deg,#ff4500,var(--ox));
+  border:1px solid var(--ox2);color:#1a0500;
+  font-family:'Orbitron',sans-serif;font-size:13px;font-weight:900;
+  padding:11px;border-radius:9px;cursor:pointer;letter-spacing:2px;
+  box-shadow:0 0 18px rgba(255,106,0,.35);transition:.15s;
+}
+.login-btn:hover{box-shadow:0 0 28px rgba(255,140,0,.5);transform:translateY(-1px);}
+
+/* ── Admin shell ── */
+#admin-shell{display:none;flex-direction:column;min-height:100vh;}
+
+/* Top bar */
+#topbar{
+  display:flex;align-items:center;gap:12px;
+  background:#04040e;border-bottom:1px solid var(--border);
+  padding:10px 20px;flex-shrink:0;
+}
+#topbar .logo{font-size:14px;font-weight:900;letter-spacing:2px;color:var(--ox2);flex:1;}
+#topbar .logo span{color:#fff;}
+.topbar-badge{font-size:8px;color:var(--dim);letter-spacing:1px;font-family:'Share Tech Mono',monospace;}
+#logout-btn{
+  background:transparent;border:1px solid rgba(255,50,50,.3);color:rgba(255,80,50,.6);
+  font-family:'Orbitron',sans-serif;font-size:9px;padding:5px 12px;
+  border-radius:6px;cursor:pointer;transition:.15s;
+}
+#logout-btn:hover{border-color:var(--red);color:var(--red);}
+
+/* Nav tabs */
+#nav{
+  display:flex;gap:2px;background:#04040e;border-bottom:1px solid var(--border);
+  padding:0 20px;flex-shrink:0;overflow-x:auto;
+}
+.nav-tab{
+  background:transparent;border:none;border-bottom:2px solid transparent;
+  color:var(--dim);font-family:'Orbitron',sans-serif;font-size:9px;letter-spacing:1px;
+  padding:10px 14px;cursor:pointer;white-space:nowrap;transition:.15s;
+}
+.nav-tab.active{color:var(--ox2);border-bottom-color:var(--ox);}
+.nav-tab:hover:not(.active){color:var(--text);}
+
+/* Content */
+#content{flex:1;padding:20px;overflow-y:auto;max-width:1400px;width:100%;margin:0 auto;}
+
+/* Stat cards */
+.stats-row{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px;margin-bottom:20px;}
+.stat-card{
+  background:var(--card);border:1px solid var(--border);border-radius:10px;
+  padding:14px;text-align:center;
+}
+.stat-card .sv{font-size:22px;font-weight:700;color:var(--ox2);font-family:'Share Tech Mono',monospace;}
+.stat-card .sk{font-size:8px;color:var(--dim);letter-spacing:1px;margin-top:4px;}
+
+/* Section card */
+.section{
+  background:var(--card);border:1px solid var(--border);
+  border-radius:12px;padding:16px;margin-bottom:16px;
+}
+.section h3{
+  font-size:11px;color:var(--ox2);letter-spacing:1.5px;margin-bottom:12px;
+  display:flex;align-items:center;gap:8px;
+}
+.section h3 .icon{font-size:14px;}
+
+/* Toolbar */
+.toolbar{display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;align-items:center;}
+.search-box{
+  flex:1;min-width:180px;background:#040410;border:1px solid var(--border);
+  color:var(--text);font-family:'Share Tech Mono',monospace;font-size:11px;
+  padding:7px 10px;border-radius:7px;outline:none;
+}
+.search-box:focus{border-color:var(--ox);}
+.filter-btn{
+  background:#040410;border:1px solid var(--border);color:var(--dim);
+  font-family:'Orbitron',sans-serif;font-size:8px;padding:6px 10px;
+  border-radius:6px;cursor:pointer;letter-spacing:.5px;transition:.15s;
+}
+.filter-btn.active,.filter-btn:hover{border-color:var(--ox);color:var(--ox2);}
+.export-btn{
+  background:#0a0020;border:1px solid rgba(153,51,255,.3);color:var(--purple);
+  font-family:'Orbitron',sans-serif;font-size:8px;padding:6px 12px;
+  border-radius:6px;cursor:pointer;transition:.15s;
+}
+.export-btn:hover{border-color:var(--purple);background:#110033;}
+
+/* Tables */
+.tbl-wrap{overflow-x:auto;}
+table{width:100%;border-collapse:collapse;font-size:11px;}
+th{
+  background:#04040e;color:var(--dim);font-size:8px;letter-spacing:1px;
+  padding:8px 10px;text-align:left;border-bottom:1px solid var(--border);
+  white-space:nowrap;
+}
+td{padding:8px 10px;border-bottom:1px solid rgba(30,30,68,.5);vertical-align:middle;}
+tr:hover td{background:rgba(255,106,0,.03);}
+.uid-cell{font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--dim);cursor:help;}
+.bal-cell{font-family:'Share Tech Mono',monospace;color:var(--gold);}
+.empty-state{text-align:center;padding:28px;color:var(--dim);font-size:11px;}
+
+/* Badges */
+.badge{
+  display:inline-block;font-size:8px;font-weight:700;letter-spacing:1px;
+  padding:2px 8px;border-radius:10px;
+}
+.badge-email  {background:rgba(0,180,255,.1);border:1px solid rgba(0,180,255,.3);color:#00d4ff;}
+.badge-google {background:rgba(66,133,244,.1);border:1px solid rgba(66,133,244,.3);color:#4285F4;}
+.badge-wallet {background:rgba(226,118,27,.1);border:1px solid rgba(226,118,27,.3);color:#E4761B;}
+.badge-guest  {background:rgba(80,80,80,.1);border:1px solid rgba(80,80,80,.3);color:#777;}
+.status-on{color:var(--green);font-size:10px;}
+.status-off{color:var(--red);font-size:10px;opacity:.6;}
+
+/* Action buttons */
+.btn-ban  {background:#120404;border:1px solid rgba(255,50,50,.3);color:#cc3333;font-size:8px;padding:3px 9px;border-radius:5px;cursor:pointer;font-family:'Orbitron',sans-serif;transition:.12s;}
+.btn-ban:hover{background:#1a0606;color:var(--red);}
+.btn-unban{background:#041208;border:1px solid rgba(0,200,80,.3);color:#00cc66;font-size:8px;padding:3px 9px;border-radius:5px;cursor:pointer;font-family:'Orbitron',sans-serif;transition:.12s;}
+.btn-del  {background:#0e0000;border:1px solid rgba(180,0,0,.3);color:#ff2222;font-size:8px;padding:3px 9px;border-radius:5px;cursor:pointer;font-family:'Orbitron',sans-serif;transition:.12s;margin-left:3px;}
+.btn-del:hover{background:#1a0000;border-color:var(--red);}
+
+/* Config inputs */
+.cfg-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.cfg-field label{font-size:8px;color:var(--dim);letter-spacing:1px;display:block;margin-bottom:4px;}
+.cfg-input{
+  width:100%;background:#040410;border:1px solid var(--border);
+  color:var(--text);font-family:'Share Tech Mono',monospace;font-size:12px;
+  padding:8px 10px;border-radius:7px;outline:none;transition:.15s;
+}
+.cfg-input:focus{border-color:var(--ox);}
+.save-btn{
+  background:linear-gradient(135deg,#ff4500,var(--ox));
+  border:1px solid var(--ox2);color:#1a0500;
+  font-family:'Orbitron',sans-serif;font-size:11px;font-weight:900;
+  padding:9px 20px;border-radius:8px;cursor:pointer;letter-spacing:1.5px;
+  box-shadow:0 0 14px rgba(255,106,0,.3);transition:.15s;margin-top:12px;
+}
+.save-btn:hover{box-shadow:0 0 22px rgba(255,140,0,.5);}
+
+/* WD status badges */
+.wd-pending {color:var(--gold);}
+.wd-approved{color:#00aaff;}
+.wd-paid    {color:var(--green);}
+.wd-rejected{color:var(--red);opacity:.7;}
+
+/* Withdrawal action btns */
+.btn-approve{background:#041020;border:1px solid rgba(0,150,255,.3);color:#0099ff;font-size:8px;padding:3px 9px;border-radius:5px;cursor:pointer;font-family:'Orbitron',sans-serif;}
+.btn-reject {background:#120404;border:1px solid rgba(255,50,50,.3);color:#cc3333;font-size:8px;padding:3px 9px;border-radius:5px;cursor:pointer;font-family:'Orbitron',sans-serif;margin-left:3px;}
+.btn-paid   {background:#041208;border:1px solid rgba(0,200,80,.3);color:#00cc66;font-size:8px;padding:3px 9px;border-radius:5px;cursor:pointer;font-family:'Orbitron',sans-serif;}
+
+/* Toast */
+#toast{
+  position:fixed;top:14px;right:14px;z-index:9999;
+  font-family:'Share Tech Mono',monospace;font-size:11px;
+  padding:9px 14px;border-radius:8px;display:none;
+  box-shadow:0 4px 20px rgba(0,0,0,.4);
+}
+.toast-ok {background:#041208;border:1px solid rgba(0,200,80,.4);color:var(--green);}
+.toast-err{background:#120404;border:1px solid rgba(255,50,50,.4);color:var(--red);}
+
+/* Spinner */
+.spinner{display:inline-block;width:11px;height:11px;border:2px solid rgba(255,255,255,.15);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;vertical-align:middle;margin-right:5px;}
+@keyframes spin{to{transform:rotate(360deg);}}
+</style>
+</head>
+<body>
+
+<!-- ══ LOGIN ══ -->
+<div id="login-screen">
+  <div id="login-card">
+    <div class="admin-logo">OXE<span>●</span>BALL</div>
+    <div class="admin-sub">ADMIN PANEL</div>
+    <div class="pw-wrap">
+      <input type="password" id="pw-input" placeholder="Admin password" onkeydown="if(event.key==='Enter')doLogin()"/>
+      <button class="eye" onclick="toggleEye()">👁</button>
+    </div>
+    <div id="login-err">⚠ Wrong password</div>
+    <button class="login-btn" id="login-btn" onclick="doLogin()">ACCESS PANEL</button>
+  </div>
+</div>
+
+<!-- ══ ADMIN SHELL ══ -->
+<div id="admin-shell">
+
+  <div id="topbar">
+    <div class="logo">OXE<span>●</span>BALL <span class="topbar-badge">ADMIN</span></div>
+    <span id="clock" class="topbar-badge"></span>
+    <button id="logout-btn" onclick="doLogout()">LOGOUT</button>
+  </div>
+
+  <div id="nav">
+    <button class="nav-tab active" onclick="showTab('overview')">📊 OVERVIEW</button>
+    <button class="nav-tab" onclick="showTab('users')">👥 USERS</button>
+    <button class="nav-tab" onclick="showTab('withdrawals')">💸 WITHDRAWALS</button>
+    <button class="nav-tab" onclick="showTab('deposits')">💰 DEPOSITS</button>
+    <button class="nav-tab" onclick="showTab('referrals')">🎁 REFERRALS</button>
+    <button class="nav-tab" onclick="showTab('config')">⚙ CONFIG</button>
+  </div>
+
+  <div id="content">
+
+    <!-- OVERVIEW -->
+    <div id="tab-overview">
+      <div class="stats-row" id="stat-cards"></div>
+    </div>
+
+    <!-- USERS -->
+    <div id="tab-users" style="display:none">
+      <div class="section">
+        <h3><span class="icon">👥</span> USER MANAGEMENT</h3>
+        <div class="toolbar">
+          <input class="search-box" id="user-search" placeholder="Search email / username / UID..." oninput="renderUsers()"/>
+          <button class="filter-btn active" data-filter="all"    onclick="setUserFilter('all',this)">ALL</button>
+          <button class="filter-btn" data-filter="email"         onclick="setUserFilter('email',this)">EMAIL</button>
+          <button class="filter-btn" data-filter="google"        onclick="setUserFilter('google',this)">GOOGLE</button>
+          <button class="filter-btn" data-filter="wallet"        onclick="setUserFilter('wallet',this)">WALLET</button>
+          <button class="filter-btn" data-filter="banned"        onclick="setUserFilter('banned',this)">BANNED</button>
+          <button class="export-btn" onclick="exportCSV('users')">↓ CSV</button>
+        </div>
+        <div class="tbl-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>USER</th><th>UID</th><th>EMAIL / WALLET</th><th>METHOD</th>
+                <th>BALANCE</th><th>GAMES</th><th>REGISTERED</th><th>LAST LOGIN</th>
+                <th>STATUS</th><th>ACTIONS</th>
+              </tr>
+            </thead>
+            <tbody id="users-tbody"></tbody>
+          </table>
+        </div>
+        <div id="users-empty" class="empty-state" style="display:none">No users found</div>
+      </div>
+    </div>
+
+    <!-- WITHDRAWALS -->
+    <div id="tab-withdrawals" style="display:none">
+      <div class="section">
+        <h3><span class="icon">💸</span> WITHDRAWAL REQUESTS</h3>
+        <div class="toolbar">
+          <input class="search-box" id="wd-search" placeholder="Search address or ID..." oninput="renderWD()"/>
+          <button class="filter-btn active" onclick="setWDFilter('All',this)">ALL</button>
+          <button class="filter-btn" onclick="setWDFilter('Pending',this)">PENDING</button>
+          <button class="filter-btn" onclick="setWDFilter('Approved',this)">APPROVED</button>
+          <button class="filter-btn" onclick="setWDFilter('Paid',this)">PAID</button>
+          <button class="filter-btn" onclick="setWDFilter('Rejected',this)">REJECTED</button>
+          <button class="export-btn" onclick="exportCSV('withdrawals')">↓ CSV</button>
+        </div>
+        <div class="tbl-wrap">
+          <table>
+            <thead>
+              <tr><th>ID</th><th>TIME</th><th>USER</th><th>ADDRESS</th><th>OXE</th><th>USDT</th><th>STATUS</th><th>NOTE</th><th>ACTIONS</th></tr>
+            </thead>
+            <tbody id="wd-tbody"></tbody>
+          </table>
+        </div>
+        <div id="wd-empty" class="empty-state" style="display:none">No withdrawals</div>
+      </div>
+    </div>
+
+    <!-- DEPOSITS -->
+    <div id="tab-deposits" style="display:none">
+      <div class="section">
+        <h3><span class="icon">💰</span> DEPOSIT LOG</h3>
+        <div class="tbl-wrap">
+          <table>
+            <thead><tr><th>ID</th><th>TIME</th><th>USER</th><th>TX HASH</th><th>USDT</th><th>OXE</th><th>STATUS</th></tr></thead>
+            <tbody id="dep-tbody"></tbody>
+          </table>
+        </div>
+        <div id="dep-empty" class="empty-state" style="display:none">No deposits</div>
+      </div>
+    </div>
+
+    <!-- REFERRALS -->
+    <div id="tab-referrals" style="display:none">
+      <div class="section">
+        <h3><span class="icon">🎁</span> REFERRAL TRACKING</h3>
+        <div class="toolbar">
+          <input class="search-box" id="ref-search" placeholder="Search code or UID..." oninput="renderRefs()"/>
+          <button class="export-btn" onclick="exportCSV('referrals')">↓ CSV</button>
+        </div>
+        <div class="tbl-wrap">
+          <table>
+            <thead><tr><th>CODE</th><th>UID</th><th>REFERRALS</th><th>OXE EARNED</th></tr></thead>
+            <tbody id="ref-tbody"></tbody>
+          </table>
+        </div>
+        <div id="ref-empty" class="empty-state" style="display:none">No referrals yet</div>
+      </div>
+    </div>
+
+    <!-- CONFIG -->
+    <div id="tab-config" style="display:none">
+      <div class="section">
+        <h3><span class="icon">⚙</span> GAME CONFIG</h3>
+        <div class="cfg-grid">
+          <div class="cfg-field"><label>OXE RATE (1 USDT = X OXE)</label><input class="cfg-input" id="cfg-rate" type="number" min="1"/></div>
+          <div class="cfg-field"><label>MIN BET (OXE)</label><input class="cfg-input" id="cfg-minbet" type="number" min="1"/></div>
+          <div class="cfg-field"><label>MAX BET (OXE)</label><input class="cfg-input" id="cfg-maxbet" type="number" min="1"/></div>
+          <div class="cfg-field"><label>WIN CHANCE (%)</label><input class="cfg-input" id="cfg-winpct" type="number" min="1" max="99"/></div>
+          <div class="cfg-field"><label>FREE TRIAL OXE</label><input class="cfg-input" id="cfg-trial" type="number" min="0"/></div>
+        </div>
+        <button class="save-btn" onclick="saveConfig()">SAVE CONFIG</button>
+      </div>
+    </div>
+
+  </div><!-- /content -->
+</div><!-- /admin-shell -->
+
+<div id="toast"></div>
+
+<script>
+// ── State ──────────────────────────────────────────────────────────────────────
+let adminToken = sessionStorage.getItem('oxe_admin_token') || '';
+let allUsers = [], allWD = [], allDeps = [], allRefs = {};
+let userFilter = 'all', wdFilter = 'All';
+const API = '/api';
+
+// ── Fetch helper ──────────────────────────────────────────────────────────────
+function req(path, body) {
+  const ctrl = new AbortController();
+  setTimeout(() => ctrl.abort(), 8000);
+  return fetch(path, {
+    method:  body ? 'POST' : 'GET',
+    headers: { 'Content-Type':'application/json', 'Authorization':'Bearer '+adminToken },
+    body:    body ? JSON.stringify(body) : undefined,
+    signal:  ctrl.signal
+  }).then(r => r.json());
+}
+function del(path) {
+  return fetch(path, { method:'DELETE', headers:{'Authorization':'Bearer '+adminToken} }).then(r => r.json());
+}
+
+// ── Toast ─────────────────────────────────────────────────────────────────────
+function notify(msg, type) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.className = type === 'err' ? 'toast-err' : 'toast-ok';
+  el.style.display = 'block';
+  clearTimeout(el._t);
+  el._t = setTimeout(() => el.style.display = 'none', 3000);
+}
+
+// ── Login ─────────────────────────────────────────────────────────────────────
+function toggleEye() {
+  const inp = document.getElementById('pw-input');
+  inp.type = inp.type === 'password' ? 'text' : 'password';
+}
+function doLogin() {
+  const pw = document.getElementById('pw-input').value;
+  const btn = document.getElementById('login-btn');
+  btn.innerHTML = '<span class="spinner"></span>CONNECTING...';
+  btn.disabled = true;
+  req(API+'/admin/login', { password: pw })
+    .then(r => {
+      btn.innerHTML = 'ACCESS PANEL';
+      btn.disabled = false;
+      if (r.error) { document.getElementById('login-err').style.display = 'block'; return; }
+      adminToken = r.token;
+      sessionStorage.setItem('oxe_admin_token', r.token);
+      document.getElementById('login-screen').style.display = 'none';
+      document.getElementById('admin-shell').style.display = 'flex';
+      initAdmin();
+    })
+    .catch(() => { btn.innerHTML='ACCESS PANEL'; btn.disabled=false;
+      document.getElementById('login-err').textContent='⚠ Server error'; document.getElementById('login-err').style.display='block'; });
+}
+document.getElementById('pw-input').addEventListener('keydown', e => { if(e.key==='Enter') doLogin(); });
+
+function doLogout() {
+  sessionStorage.removeItem('oxe_admin_token');
+  adminToken = '';
+  document.getElementById('login-screen').style.display = 'flex';
+  document.getElementById('admin-shell').style.display = 'none';
+  document.getElementById('pw-input').value = '';
+}
+
+// ── Clock ─────────────────────────────────────────────────────────────────────
+function startClock() {
+  const el = document.getElementById('clock');
+  setInterval(() => { el.textContent = new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit',second:'2-digit'}); }, 1000);
+}
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+function initAdmin() {
+  startClock();
+  loadAll();
+  setInterval(loadAll, 30000);
+}
+
+function loadAll() {
+  Promise.all([
+    req(API+'/admin/users'),
+    req(API+'/admin/withdrawals'),
+    req(API+'/admin/deposits'),
+    req(API+'/admin/referrals'),
+    req(API+'/admin/config')
+  ]).then(([users, wds, deps, refs, cfg]) => {
+    allUsers = Array.isArray(users) ? users : Object.values(users);
+    allWD    = Array.isArray(wds)   ? wds   : [];
+    allDeps  = Array.isArray(deps)  ? deps  : [];
+    allRefs  = refs && !refs.error  ? refs  : {};
+    renderStats(cfg);
+    renderUsers();
+    renderWD();
+    renderDeps();
+    renderRefs();
+    fillConfig(cfg);
+  }).catch(() => notify('⚠ Failed to load data','err'));
+}
+
+// ── Stats ─────────────────────────────────────────────────────────────────────
+function renderStats(cfg) {
+  const pending = allWD.filter(w => w.status === 'Pending').length;
+  const totalDep = allDeps.reduce((s, d) => s + parseFloat(d.usdt||0), 0);
+  const today = new Date().toDateString();
+  const active = allUsers.filter(u => u.lastLogin && new Date(u.lastLogin).toDateString() === today).length;
+  const totalRef = Object.values(allRefs).reduce((s, r) => s + (r.count||0), 0);
+
+  document.getElementById('stat-cards').innerHTML = [
+    ['USERS', allUsers.length, var(--cyan)],
+    ['ACTIVE TODAY', active, '#44ff88'],
+    ['PENDING WD', pending, pending>0?'var(--red)':'var(--green)'],
+    ['DEPOSITS ($)', '$'+totalDep.toFixed(2), 'var(--gold)'],
+    ['OXE RATE', (cfg&&cfg.rate)||20, 'var(--ox2)'],
+    ['REFERRALS', totalRef, 'var(--purple)'],
+  ].map(([k,v,c]) =>
+    `<div class="stat-card"><div class="sv" style="color:${c}">${v}</div><div class="sk">${k}</div></div>`
+  ).join('');
+}
+// fix template literal issue
+function rStats(cfg) {
+  const pending = allWD.filter(w => w.status === 'Pending').length;
+  const totalDep = allDeps.reduce((s, d) => s + parseFloat(d.usdt||0), 0);
+  const today = new Date().toDateString();
+  const active = allUsers.filter(u => u.lastLogin && new Date(u.lastLogin).toDateString() === today).length;
+  const totalRef = Object.values(allRefs).reduce((s, r) => s + (r.count||0), 0);
+  const rate = (cfg&&cfg.rate)||20;
+  const cards = [
+    {k:'USERS',v:allUsers.length,c:'#00d4ff'},
+    {k:'ACTIVE TODAY',v:active,c:'#44ff88'},
+    {k:'PENDING WD',v:pending,c:pending>0?'#ff4433':'#00ee77'},
+    {k:'DEPOSITS ($)',v:'$'+totalDep.toFixed(2),c:'#f0c040'},
+    {k:'OXE RATE',v:rate,c:'#ff9a00'},
+    {k:'REFERRALS',v:totalRef,c:'#9933ff'},
+  ];
+  document.getElementById('stat-cards').innerHTML = cards.map(c =>
+    '<div class="stat-card"><div class="sv" style="color:'+c.c+'">'+c.v+'</div><div class="sk">'+c.k+'</div></div>'
+  ).join('');
+}
+
+// Override with correct version
+Promise.resolve().then(() => {
+  const orig = renderStats;
+  window.renderStats = function(cfg){ rStats(cfg); };
+});
+
+// ── Users ─────────────────────────────────────────────────────────────────────
+function setUserFilter(f, btn) {
+  userFilter = f;
+  document.querySelectorAll('#tab-users .filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderUsers();
+}
+
+function renderUsers() {
+  const search = (document.getElementById('user-search').value||'').toLowerCase();
+  let rows = allUsers.filter(u => {
+    if (userFilter !== 'all' && userFilter !== 'banned') {
+      if ((u.method||'email') !== userFilter) return false;
+    }
+    if (userFilter === 'banned' && !u.banned) return false;
+    if (search) {
+      const hay = ((u.email||'')+(u.username||'')+(u.uid||'')+(u.walletAddress||'')).toLowerCase();
+      if (!hay.includes(search)) return false;
+    }
+    return true;
+  });
+
+  const tbody = document.getElementById('users-tbody');
+  const empty = document.getElementById('users-empty');
+  if (!rows.length) { tbody.innerHTML=''; empty.style.display='block'; return; }
+  empty.style.display = 'none';
+
+  tbody.innerHTML = rows.map(u => {
+    const init = (u.username||u.email||'?').slice(0,2).toUpperCase();
+    const reg  = u.registeredAt ? new Date(u.registeredAt).toLocaleDateString() : '—';
+    const last = u.lastLogin    ? new Date(u.lastLogin).toLocaleString([],{month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'}) : '—';
+    const meth = (u.method||'email').toUpperCase();
+    const ident = u.email || (u.walletAddress ? u.walletAddress.slice(0,16)+'...' : '—');
+    const status = u.banned
+      ? '<span class="status-off">⊘ BANNED</span>'
+      : '<span class="status-on">● ACTIVE</span>';
+    const banBtn = u.banned
+      ? '<button class="btn-unban" onclick="banUser(\''+u.uid+'\',false)">UNBAN</button>'
+      : '<button class="btn-ban"   onclick="banUser(\''+u.uid+'\',true)">BAN</button>';
+    return '<tr style="'+(u.banned?'opacity:.5':'')+'">'+
+      '<td><div style="display:flex;align-items:center;gap:8px;"><div style="width:30px;height:30px;border-radius:50%;background:linear-gradient(135deg,#ff4500,#ff9a00);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:900;color:#1a0500;flex-shrink:0;">'+init+'</div>'+
+      '<span style="color:#aabbcc;font-size:11px;">'+(u.username||'—')+'</span></div></td>'+
+      '<td class="uid-cell" title="'+u.uid+'">'+u.uid.slice(0,12)+'...</td>'+
+      '<td style="color:#5566aa;font-size:10px;max-width:160px;overflow:hidden;text-overflow:ellipsis;">'+ident+'</td>'+
+      '<td><span class="badge badge-'+( u.method||'email')+'">'+meth+'</span></td>'+
+      '<td class="bal-cell">'+(u.balance||0).toLocaleString()+'</td>'+
+      '<td style="color:#5566aa;">'+(u.gamesPlayed||0)+'</td>'+
+      '<td style="color:#3a4a66;font-size:9px;">'+reg+'</td>'+
+      '<td style="color:#3a4a66;font-size:9px;">'+last+'</td>'+
+      '<td>'+status+'</td>'+
+      '<td>'+banBtn+'<button class="btn-del" onclick="deleteUser(\''+u.uid+'\',\''+(u.username||'').replace(/'/g,'')+'\')">✕ DEL</button></td>'+
+      '</tr>';
+  }).join('');
+}
+
+function banUser(uid, ban) {
+  req(API+'/admin/users/ban', { uid, ban })
+    .then(r => {
+      if (r.error) return notify('⚠ '+r.error,'err');
+      const u = allUsers.find(u => u.uid === uid);
+      if (u) { u.banned = ban; if(ban) u.bannedAt=new Date().toISOString(); else delete u.bannedAt; }
+      renderUsers(); renderStats({});
+      notify((ban?'⊘ Banned':'✓ Unbanned')+': '+uid.slice(0,12), ban?'err':'ok');
+    });
+}
+
+function deleteUser(uid, name) {
+  if (!confirm('Permanently delete user "'+name+'"?\n\nThis cannot be undone.')) return;
+  del(API+'/admin/users/'+uid)
+    .then(r => {
+      if (r.error) return notify('⚠ '+r.error,'err');
+      allUsers = allUsers.filter(u => u.uid !== uid);
+      renderUsers(); renderStats({});
+      notify('✕ Deleted: '+name,'err');
+    });
+}
+
+// ── Withdrawals ───────────────────────────────────────────────────────────────
+function setWDFilter(f, btn) {
+  wdFilter = f;
+  document.querySelectorAll('#tab-withdrawals .filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderWD();
+}
+
+function renderWD() {
+  const search = (document.getElementById('wd-search').value||'').toLowerCase();
+  const rows = allWD.filter(w => {
+    if (wdFilter !== 'All' && w.status !== wdFilter) return false;
+    if (search && !(w.id+w.address+(w.username||'')+(w.email||'')).toLowerCase().includes(search)) return false;
+    return true;
+  });
+  const tbody = document.getElementById('wd-tbody');
+  const empty = document.getElementById('wd-empty');
+  if (!rows.length) { tbody.innerHTML=''; empty.style.display='block'; return; }
+  empty.style.display='none';
+  tbody.innerHTML = rows.map(w => {
+    const t   = new Date(w.time).toLocaleString([],{month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'});
+    const cls = {Pending:'wd-pending',Approved:'wd-approved',Paid:'wd-paid',Rejected:'wd-rejected'}[w.status]||'';
+    const actions = w.status==='Pending'
+      ? '<button class="btn-approve" onclick="updateWD(\''+w.id+'\',\'Approved\')">✓ APPROVE</button><button class="btn-reject" onclick="updateWD(\''+w.id+'\',\'Rejected\')">✕ REJECT</button>'
+      : w.status==='Approved'
+      ? '<button class="btn-paid" onclick="updateWD(\''+w.id+'\',\'Paid\')">⬡ MARK PAID</button>'
+      : '—';
+    return '<tr>'+
+      '<td style="font-family:\'Share Tech Mono\',monospace;font-size:9px;color:#5566aa;">'+w.id+'</td>'+
+      '<td style="font-size:9px;color:#3a4a66;">'+t+'</td>'+
+      '<td style="color:#aabbcc;font-size:10px;">'+(w.username||w.email||'—')+'</td>'+
+      '<td style="font-family:\'Share Tech Mono\',monospace;font-size:9px;color:#5566aa;">'+w.address.slice(0,16)+'...</td>'+
+      '<td style="color:#f0c040;font-family:\'Share Tech Mono\',monospace;">'+w.oxe+'</td>'+
+      '<td style="color:#44aa66;">$'+w.usdt+'</td>'+
+      '<td class="'+cls+'">'+w.status+'</td>'+
+      '<td style="font-size:9px;color:#3a4a66;">'+(w.note||'—')+'</td>'+
+      '<td>'+actions+'</td></tr>';
+  }).join('');
+}
+
+function updateWD(id, status) {
+  const note = status === 'Rejected' ? (prompt('Rejection reason (optional):') || '') : '';
+  req(API+'/admin/withdrawals/update', { id, status, note })
+    .then(r => {
+      if (r.error) return notify('⚠ '+r.error,'err');
+      const w = allWD.find(w => w.id===id);
+      if (w) { w.status=status; w.note=note; }
+      renderWD(); renderStats({});
+      notify(status+': '+id,'ok');
+    });
+}
+
+// ── Deposits ──────────────────────────────────────────────────────────────────
+function renderDeps() {
+  const tbody = document.getElementById('dep-tbody');
+  const empty = document.getElementById('dep-empty');
+  if (!allDeps.length) { tbody.innerHTML=''; empty.style.display='block'; return; }
+  empty.style.display='none';
+  tbody.innerHTML = allDeps.map(d => {
+    const t = new Date(d.time).toLocaleString([],{month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'});
+    return '<tr>'+
+      '<td style="font-family:\'Share Tech Mono\',monospace;font-size:9px;color:#5566aa;">'+d.id+'</td>'+
+      '<td style="font-size:9px;color:#3a4a66;">'+t+'</td>'+
+      '<td style="color:#aabbcc;font-size:10px;">'+(d.email||'—')+'</td>'+
+      '<td style="font-family:\'Share Tech Mono\',monospace;font-size:9px;color:#5566aa;">'+d.txHash.slice(0,18)+'...</td>'+
+      '<td style="color:#44aa66;">$'+d.usdt+'</td>'+
+      '<td style="color:#f0c040;font-family:\'Share Tech Mono\',monospace;">'+d.oxe+'</td>'+
+      '<td style="color:var(--green);font-size:10px;">'+d.status+'</td></tr>';
+  }).join('');
+}
+
+// ── Referrals ─────────────────────────────────────────────────────────────────
+function renderRefs() {
+  const search = (document.getElementById('ref-search').value||'').toLowerCase();
+  const rows = Object.entries(allRefs).filter(([code,data]) => {
+    if (!search) return true;
+    return (code+data.uid+(data.email||'')).toLowerCase().includes(search);
+  }).sort((a,b) => b[1].earned - a[1].earned);
+  const tbody = document.getElementById('ref-tbody');
+  const empty = document.getElementById('ref-empty');
+  if (!rows.length) { tbody.innerHTML=''; empty.style.display='block'; return; }
+  empty.style.display='none';
+  tbody.innerHTML = rows.map(([code,d]) =>
+    '<tr>'+
+    '<td style="color:#cc44ff;font-family:\'Share Tech Mono\',monospace;letter-spacing:2px;font-weight:700;">'+code+'</td>'+
+    '<td class="uid-cell" title="'+d.uid+'">'+d.uid.slice(0,14)+'...</td>'+
+    '<td style="color:#00ff88;font-weight:700;">'+d.count+'</td>'+
+    '<td style="color:#f0c040;font-weight:700;">'+d.earned+' OXE</td>'+
+    '</tr>'
+  ).join('');
+}
+
+// ── Config ────────────────────────────────────────────────────────────────────
+function fillConfig(cfg) {
+  if (!cfg||cfg.error) return;
+  document.getElementById('cfg-rate').value   = cfg.rate   ||20;
+  document.getElementById('cfg-minbet').value = cfg.minBet ||10;
+  document.getElementById('cfg-maxbet').value = cfg.maxBet ||100000;
+  document.getElementById('cfg-winpct').value = cfg.winPct ||10;
+  document.getElementById('cfg-trial').value  = cfg.trialOxe||200;
+}
+
+function saveConfig() {
+  const body = {
+    rate:     +document.getElementById('cfg-rate').value,
+    minBet:   +document.getElementById('cfg-minbet').value,
+    maxBet:   +document.getElementById('cfg-maxbet').value,
+    winPct:   +document.getElementById('cfg-winpct').value,
+    trialOxe: +document.getElementById('cfg-trial').value,
+  };
+  req(API+'/admin/config', body)
+    .then(r => notify(r.error ? '⚠ '+r.error : '✓ Config saved','ok'));
+}
+
+// ── Tab switching ─────────────────────────────────────────────────────────────
+function showTab(name) {
+  ['overview','users','withdrawals','deposits','referrals','config'].forEach(t => {
+    document.getElementById('tab-'+t).style.display = t===name?'':'none';
+  });
+  document.querySelectorAll('.nav-tab').forEach((btn,i) => {
+    const tabs = ['overview','users','withdrawals','deposits','referrals','config'];
+    btn.classList.toggle('active', tabs[i]===name);
+  });
+}
+
+// ── CSV export ────────────────────────────────────────────────────────────────
+function exportCSV(type) {
+  let csv='', filename='';
+  if (type==='users') {
+    csv = 'UID,Username,Email,Method,Balance,Games,Registered,Banned\n' +
+      allUsers.map(u => [u.uid,u.username||'',u.email||'',u.method,u.balance||0,u.gamesPlayed||0,u.registeredAt,u.banned].join(',')).join('\n');
+    filename = 'users.csv';
+  } else if (type==='withdrawals') {
+    csv = 'ID,Time,User,Address,OXE,USDT,Status\n' +
+      allWD.map(w => [w.id,w.time,w.username||'',w.address,w.oxe,w.usdt,w.status].join(',')).join('\n');
+    filename = 'withdrawals.csv';
+  } else if (type==='referrals') {
+    csv = 'Code,UID,Count,Earned\n' +
+      Object.entries(allRefs).map(([code,d]) => [code,d.uid,d.count,d.earned].join(',')).join('\n');
+    filename = 'referrals.csv';
+  }
+  const blob = new Blob([csv],{type:'text/csv'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'oxeball-'+filename;
+  a.click();
+}
+
+// ── Auto-login if session exists ──────────────────────────────────────────────
+if (adminToken) {
+  req(API+'/admin/config')
+    .then(r => {
+      if (!r.error) {
+        document.getElementById('login-screen').style.display = 'none';
+        document.getElementById('admin-shell').style.display = 'flex';
+        initAdmin();
+      } else {
+        sessionStorage.removeItem('oxe_admin_token');
+        adminToken = '';
+      }
+    }).catch(() => { sessionStorage.removeItem('oxe_admin_token'); adminToken = ''; });
+}
+</script>
+</body>
+</html>

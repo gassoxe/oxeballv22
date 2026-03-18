@@ -1,0 +1,2757 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<script src="/api.js"></script>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"/>
+<title>OXE BALL — Crypto Plinko</title>
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;900&family=Share+Tech+Mono&display=swap" rel="stylesheet"/>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  --gold:#f0c040;--neon:#00d4ff;--purple:#9933ff;--pink:#cc44ff;
+  --bg:#04040c;--bg2:#08081a;--bg3:#0d0d22;
+  --border:#1a1a44;--border2:#2a2a66;
+}
+html,body{height:100%;background:#02020a;overflow:hidden;max-width:100vw;}
+body{display:flex;flex-direction:row;align-items:stretch;justify-content:center;font-family:'Orbitron',sans-serif;color:#ccd;}
+
+/* ── APP SHELL ── */
+#app{
+  flex:1;
+  min-width:300px;
+  max-width:520px;
+  height:100vh;
+  display:flex;flex-direction:column;
+  background:var(--bg);position:relative;overflow:hidden;
+  box-sizing:border-box;
+}
+
+/* ── HEADER ── */
+#hdr{
+  display:flex;justify-content:space-between;align-items:center;
+  padding:8px 14px 6px;
+  background:linear-gradient(180deg,#0a0a20 0%,#060614 100%);
+  border-bottom:1px solid #2a2a66;
+  flex-shrink:0;
+}
+#logo{
+  font-size:20px;font-weight:900;letter-spacing:4px;
+  color:#00d4ff;
+  text-shadow:0 0 20px rgba(0,212,255,.6),0 0 40px rgba(0,212,255,.3);
+}
+#logo span{color:#cc44ff;text-shadow:0 0 20px rgba(204,68,255,.6);}
+#bal-box{text-align:right;}
+#bal-lbl{font-size:8px;color:#3344aa;letter-spacing:2px;font-family:'Share Tech Mono',monospace;}
+#bal-val{font-size:18px;font-weight:700;color:#00ff88;text-shadow:0 0 12px rgba(0,255,136,.5);}
+
+/* ── PANELS ── */
+#panels{flex:1;overflow:hidden;position:relative;}
+.panel{position:absolute;inset:0;overflow-y:auto;display:none;padding:0;}
+.panel.active{display:block;}
+.panel::-webkit-scrollbar{width:3px;}
+.panel::-webkit-scrollbar-thumb{background:#2233aa;border-radius:4px;}
+
+/* ── GAME PANEL ── */
+#panel-play{padding:0;}
+#game-wrap{
+  position:relative;
+  background:linear-gradient(180deg,#04040e 0%,#06061a 100%);
+}
+canvas{display:block;width:100%;}
+
+/* ── RESULT OVERLAYS ── */
+#result-flash{
+  position:absolute;top:40%;left:50%;transform:translate(-50%,-50%);
+  font-size:44px;font-weight:900;pointer-events:none;opacity:0;
+  transition:opacity .3s;letter-spacing:3px;white-space:nowrap;
+  font-family:'Orbitron',sans-serif;
+}
+#combo-flash{
+  position:absolute;top:20%;left:50%;transform:translate(-50%,-50%);
+  font-size:16px;font-weight:700;pointer-events:none;opacity:0;
+  transition:opacity .2s;color:var(--pink);letter-spacing:2px;
+  text-shadow:0 0 20px var(--pink);
+}
+
+/* ── CONTROLS BAR ── */
+#ctrl-bar{
+  background:linear-gradient(180deg,#07071a 0%,#050512 100%);
+  border-top:1px solid #2a2a66;
+  padding:8px 10px 6px;
+  flex-shrink:0;
+  overflow:hidden;
+}
+#ctrl-row1{
+  display:grid;
+  grid-template-columns:auto 1fr auto auto;
+  gap:6px;align-items:center;margin-bottom:6px;
+  width:100%;
+}
+#ctrl-row2{display:flex;gap:6px;align-items:center;}
+.clabel{font-size:8px;color:#3355aa;letter-spacing:1px;white-space:nowrap;flex-shrink:0;}
+#bet-row{
+  display:flex;gap:3px;align-items:center;
+  min-width:0;overflow:hidden;
+  flex-wrap:nowrap;
+}
+.bbet{
+  background:#0a0a22;border:1px solid #2a2a66;
+  color:#6688cc;font-family:'Orbitron',sans-serif;
+  font-size:11px;padding:5px 8px;border-radius:6px;
+  cursor:pointer;transition:.12s;user-select:none;
+  flex-shrink:0;white-space:nowrap;
+}
+.bbet:hover{background:#14144a;color:#aaccff;border-color:#4455aa;}
+.bbet:active{transform:scale(.95);}
+#bet-disp{
+  background:#060618;border:1px solid #3344aa;
+  color:var(--gold);font-family:'Share Tech Mono',monospace;
+  font-size:12px;padding:5px 8px;border-radius:6px;
+  min-width:60px;max-width:90px;text-align:center;
+  text-shadow:0 0 8px rgba(240,192,64,.4);
+  flex-shrink:1;flex-grow:0;
+}
+#drop-btn{
+  width:100%;
+  background:linear-gradient(135deg,#9933ff 0%,#6600cc 100%);
+  border:1px solid #cc44ff;color:#fff;
+  font-family:'Orbitron',sans-serif;font-size:15px;font-weight:700;
+  padding:11px;border-radius:9px;cursor:pointer;letter-spacing:2px;
+  transition:.15s;margin-top:2px;
+  box-shadow:0 0 20px rgba(153,51,255,.4),inset 0 1px 0 rgba(255,255,255,.1);
+}
+#drop-btn:hover{background:linear-gradient(135deg,#aa44ff,#7711dd);box-shadow:0 0 30px rgba(153,51,255,.6);}
+#drop-btn:active{transform:scale(.98);}
+#drop-btn:disabled{background:linear-gradient(135deg,#220044,#160033);color:#553388;border-color:#330066;box-shadow:none;cursor:not-allowed;}
+
+#auto-tog{
+  width:38px;height:20px;background:#080820;
+  border:1px solid #2a2a66;border-radius:20px;
+  cursor:pointer;position:relative;transition:.2s;user-select:none;flex-shrink:0;
+}
+#auto-tog.on{background:#0a001a;border-color:var(--pink);}
+#auto-tog::after{
+  content:'';position:absolute;top:2px;left:2px;
+  width:14px;height:14px;border-radius:50%;background:#223366;transition:.2s;
+}
+#auto-tog.on::after{left:20px;background:var(--pink);}
+
+/* ── STREAK ── */
+#streak-bar{height:2px;background:#0a0a22;border-radius:4px;overflow:hidden;margin-bottom:2px;}
+#streak-fill{height:100%;width:0%;background:linear-gradient(90deg,#00d4ff,#9933ff);border-radius:4px;transition:width .4s;}
+#streak-lbl{font-size:8px;color:#2233aa;text-align:right;letter-spacing:.5px;}
+
+/* ── HISTORY CHIPS ── */
+#hist-row{display:flex;gap:4px;flex-wrap:wrap;padding:4px 0 0;min-height:24px;}
+.hchip{font-family:'Share Tech Mono',monospace;font-size:9px;padding:2px 8px;border-radius:20px;}
+.hw{background:#052010;color:#00ff88;border:1px solid #0a4020;}
+.hl{background:#1a0505;color:#ff5533;border:1px solid #3a1010;}
+.hb{background:#150e00;color:var(--gold);border:1px solid #3a2a00;}
+
+/* ── STATS ROW ── */
+#stats-row{display:flex;gap:6px;margin-top:6px;}
+.stat-card{
+  flex:1;background:#06061a;border:1px solid #1a1a44;
+  border-radius:6px;padding:6px 8px;text-align:center;
+}
+.stat-card .sv{font-size:15px;font-weight:700;color:var(--gold);}
+.stat-card .sk{font-size:7px;color:#2a3a66;letter-spacing:1px;}
+
+/* ── CRYPTO / OTHER PANELS ── */
+.panel-inner{padding:10px 12px 16px;}
+.csec{
+  background:#060618;border:1px solid var(--border2);
+  border-radius:10px;padding:12px 14px;margin-bottom:10px;
+}
+.csec h3{font-size:13px;font-weight:700;color:#00d4ff;letter-spacing:1px;margin-bottom:8px;text-shadow:0 0 10px rgba(0,212,255,.4);}
+.net-badge{
+  display:inline-flex;align-items:center;gap:5px;
+  background:#0a0500;border:1px solid #553300;color:#ff9900;
+  font-size:9px;padding:2px 10px;border-radius:20px;margin-bottom:8px;letter-spacing:.5px;
+}
+.net-badge::before{content:'●';color:#ff7700;font-size:7px;}
+.info-row{display:flex;justify-content:space-between;font-size:11px;margin:4px 0;}
+.info-row .k{color:#3344aa;}
+.info-row .v{color:#7788bb;font-family:'Share Tech Mono',monospace;font-size:10px;}
+.addr-box{
+  background:#040410;border:1px solid #2233aa;
+  border-radius:7px;padding:9px 11px;
+  display:flex;align-items:center;gap:7px;margin:7px 0;
+}
+.addr-txt{font-family:'Share Tech Mono',monospace;font-size:10px;color:#00d4ff;flex:1;word-break:break-all;line-height:1.5;}
+.copy-btn{
+  background:#0a0a2a;border:1px solid #2a3a88;color:#7799cc;
+  font-size:10px;padding:4px 10px;border-radius:6px;cursor:pointer;
+  white-space:nowrap;transition:.15s;flex-shrink:0;font-family:'Orbitron',sans-serif;
+}
+.copy-btn:hover{background:#14144a;color:#00d4ff;border-color:#00d4ff;}
+.field-lbl{font-size:8px;color:#2a3a66;letter-spacing:1.5px;margin-bottom:4px;}
+.field-gap{margin-bottom:8px;}
+input[type=text],input[type=number]{
+  width:100%;background:#040410;border:1px solid #2233aa;
+  color:#aabbcc;font-family:'Share Tech Mono',monospace;
+  font-size:11px;padding:8px 12px;border-radius:7px;outline:none;transition:.15s;
+}
+input:focus{border-color:#00d4ff;box-shadow:0 0 0 2px rgba(0,212,255,.1);}
+input::placeholder{color:#1a2a44;}
+.action-btn{
+  width:100%;border:none;font-family:'Orbitron',sans-serif;
+  font-size:14px;font-weight:700;padding:10px;border-radius:8px;
+  cursor:pointer;letter-spacing:1px;transition:.15s;margin-top:3px;
+}
+.action-btn:hover{opacity:.9;transform:translateY(-1px);}
+.action-btn:disabled{opacity:.35;cursor:not-allowed;transform:none;}
+.btn-green{background:linear-gradient(135deg,#00aa55,#007733);color:#fff;box-shadow:0 0 15px rgba(0,170,85,.3);}
+.btn-purple{background:linear-gradient(135deg,#9933ff,#cc0099);color:#fff;box-shadow:0 0 15px rgba(153,51,255,.3);}
+.status-box{margin-top:8px;font-size:11px;padding:9px 12px;border-radius:7px;display:none;line-height:1.5;font-family:'Share Tech Mono',monospace;}
+.st-pending{background:#100c00;border:1px solid #554400;color:#ffcc33;}
+.st-ok{background:#050f08;border:1px solid #0a4a1a;color:#00ff88;}
+.st-fail{background:#0f0505;border:1px solid #4a1010;color:#ff5533;}
+#qr-box{display:block;width:160px;height:160px;border-radius:4px;}
+
+/* ── TX HISTORY ── */
+#tx-list{display:flex;flex-direction:column;gap:6px;}
+.tx-item{background:#060618;border:1px solid var(--border);border-radius:8px;padding:9px 12px;display:flex;justify-content:space-between;align-items:center;}
+.tx-left .tx-type{font-size:12px;font-weight:700;}
+.tx-left .tx-time{font-size:9px;color:#2a3a66;font-family:'Share Tech Mono',monospace;}
+.tx-right{text-align:right;}
+.tx-right .tx-amt{font-size:14px;font-weight:700;font-family:'Share Tech Mono',monospace;}
+.tx-right .tx-status{font-size:9px;letter-spacing:.5px;}
+.tx-dep .tx-type,.tx-dep .tx-amt{color:#00d4ff;}
+.tx-wd .tx-type,.tx-wd .tx-amt{color:#cc44ff;}
+
+/* ── NOTIFICATIONS ── */
+#notif{position:fixed;top:10px;right:10px;z-index:9999;display:flex;flex-direction:column;gap:6px;max-width:260px;}
+.notif-item{
+  background:#080818;border-left:3px solid #00d4ff;
+  padding:8px 12px;border-radius:7px;font-size:11px;color:#aabbcc;
+  box-shadow:0 4px 20px rgba(0,0,0,.8);
+  animation:notifIn .3s cubic-bezier(.3,1.3,.5,1);
+  font-family:'Orbitron',sans-serif;letter-spacing:.5px;
+}
+.notif-item.warn{border-color:var(--gold);color:#ccaa33;}
+.notif-item.err{border-color:#ff3333;}
+.notif-item.win{border-color:#00ff88;color:#00ff88;}
+@keyframes notifIn{from{opacity:0;transform:translateX(40px);}to{opacity:1;transform:translateX(0);}}
+@keyframes pulse{0%,100%{opacity:1;}50%{opacity:.4;}}
+
+/* ── PARTICLES ── */
+.particle{position:absolute;pointer-events:none;border-radius:50%;animation:pfloat linear forwards;}
+@keyframes pfloat{0%{opacity:1;transform:translateY(0) scale(1);}100%{opacity:0;transform:translateY(-100px) scale(0);}}
+
+/* ── BOTTOM NAV ── */
+#nav{
+  display:flex;background:#060618;
+  border-top:1px solid #2a2a66;flex-shrink:0;
+}
+.nav-item{
+  flex:1;display:flex;flex-direction:column;align-items:center;
+  justify-content:center;padding:6px 2px;cursor:pointer;transition:.15s;
+  color:#2a3a66;font-size:7px;letter-spacing:.3px;user-select:none;
+  border-top:2px solid transparent;min-width:0;overflow:hidden;
+}
+.nav-item .ni{font-size:16px;margin-bottom:1px;}
+.nav-item.active{color:#00d4ff;border-top-color:#00d4ff;}
+.nav-item:hover{color:#6688aa;}
+
+/* ── GLOW ANIM ── */
+@keyframes glowPulse{0%,100%{box-shadow:0 0 0 0 transparent;}50%{box-shadow:0 0 50px 15px rgba(153,51,255,.35);}}
+.glow-win{animation:glowPulse .7s ease;}
+
+/* ══ TRIAL OVERLAY ══ */
+/* ── TRIAL SIDE PANEL ── */
+#trial-overlay{
+  width:300px;min-width:280px;max-width:320px;
+  height:100vh;
+  background:linear-gradient(160deg,#05001a 0%,#03000e 60%,#020008 100%);
+  border-right:none;
+  display:flex;align-items:flex-start;justify-content:center;
+  padding:16px 14px;
+  overflow-y:auto;
+  flex-shrink:0;position:relative;z-index:10;
+}
+/* Neon right-edge divider — purple/cyan */
+#trial-overlay::after{
+  content:'';position:absolute;right:0;top:0;bottom:0;width:2px;
+  background:linear-gradient(180deg,
+    transparent 0%,
+    rgba(153,51,255,.5) 20%,
+    #9933ff 45%,
+    #00d4ff 55%,
+    rgba(0,212,255,.5) 80%,
+    transparent 100%);
+  box-shadow:0 0 18px #9933ff,0 0 40px rgba(153,51,255,.35);
+  pointer-events:none;
+  animation:trialDivPulse 3s ease-in-out infinite;
+}
+@keyframes trialDivPulse{
+  0%,100%{opacity:.75;box-shadow:0 0 14px #9933ff,0 0 28px rgba(153,51,255,.3);}
+  50%{opacity:1;box-shadow:0 0 26px #aa44ff,0 0 50px rgba(153,51,255,.55),0 0 70px rgba(0,200,255,.2);}
+}
+/* Ambient glow from right */
+#trial-overlay::before{
+  content:'';position:absolute;inset:0;pointer-events:none;
+  background:radial-gradient(ellipse 70% 80% at 100% 50%,rgba(153,51,255,.07) 0%,transparent 65%);
+}
+#trial-modal{
+  width:100%;
+  background:transparent;
+  border:none;border-radius:0;
+  padding:8px 0;
+  text-align:center;
+  position:relative;
+}
+/* OXE BALL small name at top */
+#trial-logo{
+  font-size:11px;font-weight:700;letter-spacing:3px;
+  color:rgba(0,212,255,.5);
+  text-shadow:0 0 8px rgba(0,212,255,.3);
+  margin-bottom:8px;text-transform:uppercase;
+}
+#trial-logo span{color:rgba(153,51,255,.6);}
+#trial-badge{
+  display:inline-block;
+  background:linear-gradient(135deg,#9933ff,#6600cc);
+  color:#fff;font-size:9px;font-weight:700;
+  padding:2px 12px;border-radius:20px;letter-spacing:2px;
+  margin-bottom:14px;
+  box-shadow:0 0 12px rgba(153,51,255,.45);
+}
+/* Orb hero — compact */
+#trial-hero{position:relative;width:110px;height:110px;margin:0 auto 14px;}
+#trial-orb{
+  position:absolute;inset:16px;border-radius:50%;
+  background:radial-gradient(circle at 38% 35%,#aa66ff,#5511cc 60%,#220055);
+  box-shadow:0 0 30px rgba(130,60,255,.55);
+}
+.tring{
+  position:absolute;border-radius:50%;border-style:solid;
+  border-color:rgba(153,51,255,.3);
+  animation:ringPulse 2s ease-in-out infinite;
+}
+.r1{inset:8px;border-width:1.5px;animation-delay:0s;}
+.r2{inset:2px;border-width:1px;animation-delay:.4s;}
+.r3{inset:-6px;border-width:0.8px;animation-delay:.8s;}
+@keyframes ringPulse{0%,100%{opacity:.3;transform:scale(1);}50%{opacity:.65;transform:scale(1.02);}}
+#trial-hours{
+  position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+  font-size:36px;font-weight:900;color:#fff;
+  text-shadow:0 0 16px rgba(255,255,255,.5);
+  letter-spacing:-2px;padding-bottom:12px;
+}
+#trial-hours-lbl{
+  position:absolute;bottom:22px;left:0;right:0;
+  font-size:8px;color:#9966ff;letter-spacing:2px;
+}
+/* Features list */
+#trial-features{margin-bottom:12px;text-align:left;}
+.tf{
+  font-size:11px;color:#7788aa;padding:3px 0;
+  display:flex;align-items:center;gap:7px;
+  border-bottom:1px solid rgba(40,40,100,.35);
+}
+.tf:last-child{border-bottom:none;}
+.tc{color:#00ff88;font-weight:700;}
+.tf:last-child .tc{color:#ff5533;}
+/* Timer */
+#trial-timer-wrap{
+  background:#04040e;border:1px solid #1e1e44;
+  border-radius:9px;padding:8px 12px;margin-bottom:12px;
+}
+#trial-timer-lbl{font-size:7px;color:#2a3a66;letter-spacing:2px;margin-bottom:3px;}
+#trial-countdown{
+  font-size:24px;font-weight:700;color:#00d4ff;
+  font-family:'Share Tech Mono',monospace;letter-spacing:3px;
+  text-shadow:0 0 12px rgba(0,212,255,.45);
+}
+/* Start button */
+#trial-start-btn{
+  width:100%;
+  background:linear-gradient(135deg,#9933ff 0%,#6600cc 100%);
+  border:1px solid #cc44ff;color:#fff;
+  font-family:'Orbitron',sans-serif;font-size:13px;font-weight:700;
+  padding:11px;border-radius:9px;cursor:pointer;letter-spacing:1.5px;
+  box-shadow:0 0 20px rgba(153,51,255,.45);
+  transition:.15s;margin-bottom:8px;
+  animation:btnGlow 2s ease-in-out infinite;
+}
+#trial-start-btn:hover{background:linear-gradient(135deg,#aa44ff,#7711dd);transform:translateY(-1px);}
+#trial-start-btn:active{transform:scale(.97);}
+@keyframes btnGlow{0%,100%{box-shadow:0 0 20px rgba(153,51,255,.45);}50%{box-shadow:0 0 36px rgba(153,51,255,.8),0 0 55px rgba(100,0,255,.25);}}
+#trial-or{color:#2a3a55;font-size:10px;margin:6px 0;position:relative;}
+#trial-or::before,#trial-or::after{content:'';position:absolute;top:50%;width:35%;height:1px;background:#1a1a44;}
+#trial-or::before{left:0;}#trial-or::after{right:0;}
+#trial-dep-btn{
+  width:100%;background:transparent;border:1px solid #1e1e3a;
+  color:#3a4a77;font-family:'Orbitron',sans-serif;font-size:10px;
+  padding:8px;border-radius:7px;cursor:pointer;letter-spacing:.5px;transition:.15s;
+  margin-bottom:10px;
+}
+#trial-dep-btn:hover{border-color:#4455aa;color:#7788cc;}
+#trial-terms{font-size:8px;color:#1e2a44;line-height:1.7;}
+
+/* ══ TRIAL STATUS BAR ══ */
+#trial-bar{
+  display:flex;align-items:center;gap:8px;
+  background:linear-gradient(90deg,#0d0025,#07001a);
+  border-bottom:1px solid #3322aa;
+  padding:5px 14px;flex-shrink:0;
+  font-size:11px;
+}
+#trial-bar-icon{font-size:14px;}
+#trial-bar-txt{color:#9933ff;font-weight:700;letter-spacing:1px;flex:1;}
+#trial-bar-timer{
+  color:#00d4ff;font-family:'Share Tech Mono',monospace;font-size:12px;
+  font-weight:700;text-shadow:0 0 8px rgba(0,212,255,.4);
+}
+#trial-bar-end{
+  color:#3344aa;cursor:pointer;font-size:14px;margin-left:8px;
+  transition:.15s;padding:2px 6px;border-radius:4px;
+}
+#trial-bar-end:hover{color:#ff5533;background:rgba(255,50,50,.1);}
+
+/* Expired overlay */
+#trial-expired{
+  position:fixed;inset:0;z-index:99998;
+  background:rgba(2,2,15,.92);
+  display:none;align-items:center;justify-content:center;
+  padding:20px;
+}
+#trial-expired-box{
+  width:100%;max-width:360px;
+  background:#08081c;border:1px solid #3322aa;
+  border-radius:16px;padding:28px 22px;text-align:center;
+  box-shadow:0 0 50px rgba(100,50,255,.3);
+}
+#trial-expired-box h2{font-size:22px;color:#ff5533;margin-bottom:6px;letter-spacing:2px;}
+#trial-expired-box p{font-size:12px;color:#5566aa;margin-bottom:18px;line-height:1.7;}
+#trial-dep-now{
+  width:100%;background:linear-gradient(135deg,#9933ff,#6600cc);
+  border:none;color:#fff;font-family:'Orbitron',sans-serif;
+  font-size:14px;font-weight:700;padding:12px;border-radius:9px;
+  cursor:pointer;letter-spacing:1px;margin-bottom:8px;
+  box-shadow:0 0 20px rgba(153,51,255,.4);transition:.15s;
+}
+#trial-dep-now:hover{opacity:.9;}
+
+
+/* ══════════════════════════════════════════════
+   AUTH PANEL — ORANGE NEON THEME
+   Side-by-side with game
+══════════════════════════════════════════════ */
+:root{
+  --ox:#ff6a00;       /* orange neon main      */
+  --ox2:#ff9a00;      /* orange bright accent  */
+  --ox3:#ff4500;      /* orange deep           */
+  --oxg:#1a0800;      /* orange glow bg        */
+}
+#auth-screen{
+  width:340px;min-width:310px;max-width:360px;
+  height:100vh;
+  background:linear-gradient(160deg,#100500 0%,#0a0200 60%,#070100 100%);
+  border-right:none;
+  display:flex;align-items:center;justify-content:center;
+  padding:14px 16px;
+  overflow-y:auto;
+  flex-shrink:0;position:relative;z-index:10;
+}
+/* Orange neon divider — the edge glow */
+#auth-screen::before{
+  content:'';position:absolute;inset:0;pointer-events:none;
+  background:radial-gradient(ellipse 60% 80% at 100% 50%,rgba(255,106,0,.08) 0%,transparent 70%);
+}
+#auth-screen::after{
+  content:'';position:absolute;right:0;top:0;bottom:0;width:2px;
+  background:linear-gradient(180deg,
+    transparent 0%,
+    rgba(255,106,0,.4) 15%,
+    #ff6a00 40%,
+    #ff9a00 50%,
+    #ff6a00 60%,
+    rgba(255,106,0,.4) 85%,
+    transparent 100%
+  );
+  box-shadow:0 0 18px #ff6a00,0 0 40px rgba(255,106,0,.4),0 0 60px rgba(255,80,0,.15);
+  pointer-events:none;
+  animation:divPulse 3s ease-in-out infinite;
+}
+@keyframes divPulse{
+  0%,100%{opacity:.8;box-shadow:0 0 14px #ff6a00,0 0 30px rgba(255,106,0,.3);}
+  50%{opacity:1;box-shadow:0 0 24px #ff9a00,0 0 60px rgba(255,140,0,.5),0 0 80px rgba(255,80,0,.2);}
+}
+/* Scanlines on auth panel */
+#auth-screen .scanlines{
+  position:absolute;inset:0;pointer-events:none;opacity:.04;
+  background:repeating-linear-gradient(0deg,transparent,transparent 2px,#ff6a00 2px,#ff6a00 3px);
+}
+
+#auth-card{
+  width:100%;background:transparent;
+  border:none;border-radius:0;
+  padding:10px 4px;
+  position:relative;
+}
+
+/* ── LOGO ── */
+#auth-logo{
+  text-align:center;
+  font-size:22px;font-weight:900;letter-spacing:4px;
+  color:var(--ox2);
+  text-shadow:0 0 20px var(--ox),0 0 40px rgba(255,106,0,.4);
+  margin-bottom:2px;
+  animation:logoGlow 2.5s ease-in-out infinite;
+}
+@keyframes logoGlow{
+  0%,100%{text-shadow:0 0 16px var(--ox),0 0 32px rgba(255,106,0,.3);}
+  50%{text-shadow:0 0 28px var(--ox2),0 0 50px rgba(255,140,0,.5);}
+}
+#auth-logo span{color:#fff;text-shadow:0 0 10px rgba(255,255,255,.5);}
+#auth-sub{
+  text-align:center;font-size:8px;
+  color:rgba(255,106,0,.5);
+  letter-spacing:3px;margin-bottom:14px;text-transform:uppercase;
+}
+
+/* ── TABS ── */
+#auth-tabs{
+  display:flex;
+  background:rgba(255,106,0,.05);
+  border:1px solid rgba(255,106,0,.2);
+  border-radius:10px;padding:3px;margin-bottom:12px;
+}
+.auth-tab{
+  flex:1;text-align:center;padding:7px;
+  font-size:10px;font-weight:700;
+  letter-spacing:1px;cursor:pointer;border-radius:7px;
+  transition:.2s;color:rgba(255,106,0,.4);
+  user-select:none;
+}
+.auth-tab.active{
+  background:linear-gradient(135deg,var(--ox3),var(--ox));
+  color:#fff;
+  box-shadow:0 0 14px rgba(255,106,0,.5);
+}
+.auth-tab:hover:not(.active){color:rgba(255,154,0,.7);}
+
+/* ── SOCIAL BUTTON ── */
+.social-btn{
+  width:100%;display:flex;align-items:center;justify-content:center;gap:10px;
+  padding:11px;border-radius:10px;cursor:pointer;
+  font-family:'Orbitron',sans-serif;font-size:12px;font-weight:600;
+  letter-spacing:.5px;transition:.18s;margin-bottom:10px;
+  border:1px solid rgba(255,106,0,.3);
+  background:rgba(255,106,0,.06);
+  color:#cc8855;
+}
+.social-btn:hover{
+  background:rgba(255,106,0,.12);
+  border-color:var(--ox);
+  color:var(--ox2);
+  box-shadow:0 0 16px rgba(255,106,0,.25);
+  transform:translateY(-1px);
+}
+.social-btn:active{transform:scale(.97);}
+.social-icon{font-size:18px;flex-shrink:0;}
+
+/* ── DIVIDER ── */
+.auth-divider{
+  display:flex;align-items:center;gap:8px;
+  margin:8px 0;font-size:9px;
+  color:rgba(255,106,0,.35);letter-spacing:1.5px;
+}
+.auth-divider::before,.auth-divider::after{
+  content:'';flex:1;height:1px;
+  background:linear-gradient(90deg,transparent,rgba(255,106,0,.25),transparent);
+}
+
+/* ── FORM FIELDS ── */
+.auth-field{margin-bottom:8px;}
+.auth-field label{
+  font-size:8px;
+  color:rgba(255,106,0,.5);
+  letter-spacing:1.5px;display:block;margin-bottom:4px;
+}
+.auth-input{
+  width:100%;
+  background:rgba(255,60,0,.04);
+  border:1px solid rgba(255,106,0,.2);
+  color:#ddaa88;
+  font-family:'Share Tech Mono',monospace;
+  font-size:12px;padding:9px 12px;border-radius:8px;outline:none;
+  transition:.18s;
+}
+.auth-input:focus{
+  border-color:var(--ox);
+  box-shadow:0 0 0 2px rgba(255,106,0,.15);
+  background:rgba(255,60,0,.07);
+  color:#ffcc99;
+}
+.auth-input::placeholder{color:rgba(255,106,0,.2);}
+
+/* ── PASSWORD TOGGLE ── */
+.pw-wrap{position:relative;}
+.pw-toggle{
+  position:absolute;right:10px;top:50%;transform:translateY(-50%);
+  background:none;border:none;color:rgba(255,106,0,.35);
+  cursor:pointer;font-size:14px;padding:2px 4px;transition:.15s;
+}
+.pw-toggle:hover{color:var(--ox);}
+
+/* ── SUBMIT BUTTON ── */
+.auth-submit{
+  width:100%;
+  background:linear-gradient(135deg,var(--ox3) 0%,var(--ox) 50%,var(--ox2) 100%);
+  border:1px solid var(--ox2);color:#1a0500;
+  font-family:'Orbitron',sans-serif;font-size:13px;font-weight:900;
+  padding:11px;border-radius:10px;cursor:pointer;letter-spacing:2px;
+  transition:.18s;margin-top:4px;
+  box-shadow:0 0 22px rgba(255,106,0,.45),0 2px 0 rgba(255,180,0,.3);
+}
+.auth-submit:hover{
+  background:linear-gradient(135deg,var(--ox) 0%,var(--ox2) 100%);
+  box-shadow:0 0 35px rgba(255,140,0,.6);
+  transform:translateY(-1px);
+}
+.auth-submit:active{transform:scale(.97);}
+.auth-submit:disabled{
+  background:#2a1200;border-color:#441a00;color:#663300;
+  box-shadow:none;cursor:not-allowed;transform:none;
+}
+
+/* ── MESSAGES ── */
+#auth-msg{
+  font-size:10px;padding:7px 10px;border-radius:7px;margin-bottom:8px;
+  display:none;font-family:'Share Tech Mono',monospace;
+}
+.auth-msg-err{background:#1a0404;border:1px solid rgba(255,50,50,.4);color:#ff6644;}
+.auth-msg-ok{background:#041208;border:1px solid rgba(0,200,80,.4);color:#44ee88;}
+
+/* ── FORGOT ── */
+#forgot-link{
+  font-size:9px;color:rgba(255,106,0,.35);text-align:right;
+  cursor:pointer;margin-top:3px;display:block;letter-spacing:.5px;transition:.15s;
+}
+#forgot-link:hover{color:var(--ox2);}
+
+/* ── SPINNER ── */
+.auth-spinner{
+  display:inline-block;width:13px;height:13px;
+  border:2px solid rgba(255,106,0,.2);
+  border-top-color:var(--ox2);border-radius:50%;
+  animation:spin .7s linear infinite;vertical-align:middle;margin-right:6px;
+}
+@keyframes spin{to{transform:rotate(360deg);}}
+
+/* ── GUEST ── */
+#auth-guest{
+  width:100%;background:transparent;
+  border:1px solid rgba(255,106,0,.15);
+  color:rgba(255,106,0,.35);
+  font-family:'Orbitron',sans-serif;font-size:9px;
+  padding:8px;border-radius:8px;cursor:pointer;letter-spacing:1px;
+  transition:.18s;margin-top:8px;
+}
+#auth-guest:hover{border-color:rgba(255,106,0,.35);color:rgba(255,154,0,.6);}
+
+/* ── TERMS ── */
+#auth-terms{
+  font-size:8px;color:rgba(255,106,0,.2);
+  text-align:center;margin-top:10px;line-height:1.8;
+}
+#auth-terms a{color:rgba(255,106,0,.4);cursor:pointer;text-decoration:underline;}
+
+/* ── USER BADGE (in game header) ── */
+#user-badge{
+  display:none;align-items:center;gap:6px;
+  font-size:9px;color:#cc7733;font-family:'Share Tech Mono',monospace;
+}
+#user-avatar{
+  width:22px;height:22px;border-radius:50%;
+  background:linear-gradient(135deg,var(--ox3),var(--ox2));
+  display:flex;align-items:center;justify-content:center;
+  font-size:10px;font-weight:700;color:#fff;flex-shrink:0;
+  box-shadow:0 0 8px rgba(255,106,0,.5);
+}
+
+
+/* ── REFERRAL ── */
+#ref-banner{
+  background:linear-gradient(135deg,#0a0020,#05000e);
+  border:1px solid #5500aa;border-radius:10px;
+  padding:10px 14px;margin-top:10px;
+  display:none;
+}
+#ref-banner-title{font-size:10px;color:#9933ff;letter-spacing:1.5px;margin-bottom:6px;}
+#ref-link-box{
+  display:flex;gap:6px;align-items:center;
+  background:#040010;border:1px solid #3300aa;
+  border-radius:7px;padding:7px 10px;
+}
+#ref-link-txt{
+  font-family:'Share Tech Mono',monospace;font-size:10px;
+  color:#cc88ff;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+}
+#ref-copy-btn{
+  background:#1a0044;border:1px solid #5500cc;color:#aa66ff;
+  font-size:10px;padding:4px 10px;border-radius:6px;cursor:pointer;
+  font-family:'Orbitron',sans-serif;white-space:nowrap;transition:.15s;flex-shrink:0;
+}
+#ref-copy-btn:hover{background:#220055;color:#cc88ff;border-color:#8833ff;}
+#ref-stats{display:flex;gap:8px;margin-top:8px;}
+.ref-stat{
+  flex:1;background:#060014;border:1px solid #2200aa;
+  border-radius:7px;padding:7px;text-align:center;
+}
+.ref-stat .rv{font-size:16px;font-weight:700;color:#cc44ff;font-family:'Share Tech Mono',monospace;}
+.ref-stat .rk{font-size:8px;color:#3322aa;letter-spacing:1px;}
+#ref-reward-flash{
+  font-size:11px;color:#00ff88;text-align:center;
+  padding:6px;background:#041208;border:1px solid #114422;
+  border-radius:7px;margin-top:6px;display:none;
+}
+/* Referral field in register form */
+#field-referral{display:none;}
+.ref-valid{border-color:#9933ff !important;box-shadow:0 0 0 2px rgba(153,51,255,.15) !important;}
+.ref-invalid{border-color:#ff3333 !important;}
+.ref-hint{font-size:8px;margin-top:3px;letter-spacing:.5px;}
+.ref-hint-ok{color:#9933ff;}
+.ref-hint-err{color:#ff5533;}
+
+
+/* ── EMAIL VERIFICATION STEP ── */
+#verify-step{display:none;}
+#verify-step.active{display:block;}
+.code-inputs{
+  display:flex;gap:8px;justify-content:center;margin:16px 0;
+}
+.code-box{
+  width:40px;height:50px;
+  background:rgba(255,60,0,.04);border:2px solid rgba(255,106,0,.2);
+  color:var(--ox2);font-family:'Share Tech Mono',monospace;
+  font-size:22px;font-weight:700;text-align:center;
+  border-radius:10px;outline:none;transition:.18s;
+  caret-color:var(--ox2);
+}
+.code-box:focus{border-color:var(--ox);box-shadow:0 0 0 3px rgba(255,106,0,.2);}
+.code-box.filled{border-color:var(--ox2);background:rgba(255,106,0,.08);color:var(--ox2);}
+#verify-email-disp{
+  font-size:10px;color:rgba(255,106,0,.5);text-align:center;
+  font-family:'Share Tech Mono',monospace;margin-bottom:12px;
+  word-break:break-all;
+}
+#verify-email-disp span{color:var(--ox2);text-shadow:0 0 8px rgba(255,154,0,.5);}
+#resend-row{display:flex;justify-content:center;align-items:center;gap:8px;margin-top:10px;}
+#resend-btn{
+  background:none;border:none;color:rgba(255,106,0,.4);font-family:'Orbitron',sans-serif;
+  font-size:10px;cursor:pointer;letter-spacing:.5px;padding:0;
+  transition:.18s;text-decoration:underline;
+}
+#resend-btn:hover{color:var(--ox2);}
+#resend-timer{font-size:10px;color:rgba(255,106,0,.3);font-family:'Share Tech Mono',monospace;}
+.back-btn{
+  background:none;border:none;color:rgba(255,106,0,.4);font-family:'Orbitron',sans-serif;
+  font-size:10px;cursor:pointer;letter-spacing:.5px;padding:4px 0;
+  transition:.18s;display:block;margin-bottom:10px;
+}
+.back-btn:hover{color:var(--ox2);}
+#verify-success{
+  text-align:center;display:none;padding:16px 0;
+}
+#verify-success .vs-icon{font-size:48px;margin-bottom:8px;}
+#verify-success h3{font-size:18px;color:var(--ox2);letter-spacing:2px;margin-bottom:4px;text-shadow:0 0 20px var(--ox);}
+#verify-success p{font-size:12px;color:#4455aa;}
+
+
+/* ── RESPONSIVE: stack on mobile ── */
+@media(max-width:700px){
+  body{ flex-direction:column; }
+  #auth-screen{
+    width:100% !important;max-width:100% !important;
+    height:auto;min-height:100vh;
+    border-right:none;
+    border-bottom:1px solid rgba(255,106,0,.3);
+  }
+  #app{ max-width:100%; }
+  #auth-screen::after{ display:none; }
+}
+
+/* ── RESPONSIVE: stack vertically on narrow screens ── */
+@media(max-width:720px){
+  body{flex-direction:column;}
+  #auth-screen{width:100% !important;max-width:100% !important;min-width:0 !important;
+    height:auto;border-right:none;border-bottom:1px solid #2a2a55;}
+  #auth-screen::after{display:none;}
+  #app{max-width:100%;height:auto;min-height:100vh;}
+}
+</style>
+</head>
+<body>
+
+
+<!-- Google One-Tap (hidden, triggered by button) -->
+<div id="g_id_onload"
+  data-client_id="GOOGLE_CLIENT_ID"
+  data-callback="onGoogleCredential"
+  data-auto_prompt="false">
+</div>
+
+<!-- ══ AUTH SCREEN ══ -->
+<div id="auth-screen">
+  <div id="auth-card"><div class="scanlines"></div>
+    <div id="auth-logo">OXE<span>●</span>BALL</div>
+    <div id="auth-sub">CRYPTO PLINKO GAME</div>
+
+    <!-- ── STEP 1: SIGN IN / REGISTER FORM ── -->
+    <div id="auth-step1">
+      <!-- TABS -->
+      <div id="auth-tabs">
+        <div class="auth-tab active" id="tab-login"    onclick="authTab('login')">SIGN IN</div>
+        <div class="auth-tab"        id="tab-register" onclick="authTab('register')">REGISTER</div>
+      </div>
+
+      <!-- MESSAGE -->
+      <div id="auth-msg"></div>
+
+      <!-- GMAIL BUTTON — real Google OAuth -->
+      <div id="google-btn-wrap">
+        <button class="social-btn" id="btn-google" onclick="socialAuth()">
+          <span class="social-icon">
+            <svg width="18" height="18" viewBox="0 0 48 48">
+              <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
+              <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
+              <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
+              <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.18 1.48-4.97 2.34-8.16 2.34-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
+            </svg>
+          </span>
+          <span id="google-txt">Continue with Gmail</span>
+        </button>
+        <div id="google-not-configured" style="display:none;font-size:9px;color:rgba(255,106,0,.5);text-align:center;margin-top:4px;letter-spacing:.5px;">
+          ⚠ Google OAuth not configured — use email below
+        </div>
+      </div>
+      <div class="auth-divider"><span>or use email</span></div>
+
+      <!-- FORM -->
+      <div id="auth-form-wrap">
+        <div class="auth-field" id="field-username" style="display:none;">
+          <label>USERNAME</label>
+          <input class="auth-input" id="inp-username" type="text" placeholder="Choose a username" autocomplete="username"/>
+        </div>
+        <div class="auth-field">
+          <label>EMAIL ADDRESS</label>
+          <input class="auth-input" id="inp-email" type="email" placeholder="you@gmail.com" autocomplete="email"/>
+        </div>
+        <div class="auth-field">
+          <label>PASSWORD</label>
+          <div class="pw-wrap">
+            <input class="auth-input" id="inp-password" type="password" placeholder="••••••••" autocomplete="current-password"/>
+            <button class="pw-toggle" onclick="togglePw()" tabindex="-1" id="pw-eye">👁</button>
+          </div>
+          <span id="forgot-link" onclick="forgotPassword()">Forgot password?</span>
+        </div>
+        <div class="auth-field" id="field-confirm" style="display:none;">
+          <label>CONFIRM PASSWORD</label>
+          <div class="pw-wrap">
+            <input class="auth-input" id="inp-confirm" type="password" placeholder="••••••••" autocomplete="new-password"/>
+          </div>
+        </div>
+        <div class="auth-field" id="field-referral" style="display:none;">
+          <label>REFERRAL CODE <span style="color:#3344aa;">(optional · +15 OXE)</span></label>
+          <input class="auth-input" id="inp-referral" type="text" placeholder="Enter code" oninput="validateRefCode()" autocomplete="off" style="letter-spacing:2px;text-transform:uppercase;"/>
+          <div class="ref-hint" id="ref-hint"></div>
+        </div>
+        <button class="auth-submit" id="auth-submit-btn" onclick="submitAuth()">SIGN IN</button>
+      </div>
+
+      <button id="auth-guest" onclick="guestContinue()">Continue as Guest (free trial)</button>
+      <div id="auth-terms">By continuing you agree to our <a>Terms of Service</a> and <a>Privacy Policy</a></div>
+    </div>
+
+    <!-- ── STEP 2: VERIFICATION CODE ── -->
+    <div id="auth-step2" style="display:none;">
+      <button class="back-btn" onclick="goBackToForm()">← Back</button>
+      <div style="text-align:center;margin-bottom:16px;">
+        <div style="font-size:32px;margin-bottom:8px;">📧</div>
+        <h3 style="font-size:16px;color:#fff;letter-spacing:1px;margin:0 0 6px;">Check your inbox</h3>
+        <p style="font-size:11px;color:#4455aa;margin:0;">We sent a 6-digit code to:</p>
+      </div>
+      <div id="verify-email-disp">Loading...</div>
+
+      <div id="auth-msg2"></div>
+
+      <label style="font-size:8px;color:#2a3a66;letter-spacing:1.5px;display:block;text-align:center;margin-bottom:8px;">ENTER VERIFICATION CODE</label>
+      <div class="code-inputs">
+        <input class="code-box" id="c0" maxlength="1" type="text" inputmode="numeric" pattern="[0-9]" oninput="codeInput(0)" onkeydown="codeKey(event,0)"/>
+        <input class="code-box" id="c1" maxlength="1" type="text" inputmode="numeric" pattern="[0-9]" oninput="codeInput(1)" onkeydown="codeKey(event,1)"/>
+        <input class="code-box" id="c2" maxlength="1" type="text" inputmode="numeric" pattern="[0-9]" oninput="codeInput(2)" onkeydown="codeKey(event,2)"/>
+        <input class="code-box" id="c3" maxlength="1" type="text" inputmode="numeric" pattern="[0-9]" oninput="codeInput(3)" onkeydown="codeKey(event,3)"/>
+        <input class="code-box" id="c4" maxlength="1" type="text" inputmode="numeric" pattern="[0-9]" oninput="codeInput(4)" onkeydown="codeKey(event,4)"/>
+        <input class="code-box" id="c5" maxlength="1" type="text" inputmode="numeric" pattern="[0-9]" oninput="codeInput(5)" onkeydown="codeKey(event,5)"/>
+      </div>
+
+      <button class="auth-submit" id="verify-submit-btn" onclick="submitCode()">VERIFY & START PLAYING</button>
+
+      <div id="resend-row">
+        <span id="resend-timer"></span>
+        <button id="resend-btn" onclick="resendCode()" style="display:none;">Resend code</button>
+      </div>
+    </div>
+
+    <!-- ── STEP 3: SUCCESS ── -->
+    <div id="auth-step3" style="display:none;">
+      <div id="verify-success">
+        <div class="vs-icon">🎉</div>
+        <h3>VERIFIED!</h3>
+        <p>Starting your free trial...</p>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ══ FREE TRIAL OVERLAY ══ --><!-- ══ FREE TRIAL OVERLAY ══ -->
+<div id="trial-overlay">
+  <div id="trial-modal">
+    <div id="trial-logo">OXE<span>●</span>BALL</div>
+    <div id="trial-badge">FREE TRIAL</div>
+    <div id="trial-hero">
+      <div id="trial-orb"></div>
+      <div id="trial-rings">
+        <div class="tring r1"></div>
+        <div class="tring r2"></div>
+        <div class="tring r3"></div>
+      </div>
+      <div id="trial-hours">24</div>
+      <div id="trial-hours-lbl">HOURS FREE</div>
+    </div>
+    <div id="trial-features">
+      <div class="tf"><span class="tc">✓</span> 200 OXE free credits</div>
+      <div class="tf"><span class="tc">✓</span> Full game access</div>
+      <div class="tf"><span class="tc">✓</span> Real plinko physics</div>
+      <div class="tf"><span class="tc">✗</span> Withdrawals require deposit</div>
+    </div>
+    <div id="trial-timer-wrap">
+      <div id="trial-timer-lbl">TRIAL EXPIRES IN</div>
+      <div id="trial-countdown">24:00:00</div>
+    </div>
+    <button id="trial-start-btn" onclick="startFreeTrial()">
+      ▶ START FREE TRIAL
+    </button>
+    <div id="trial-or"><span>or</span></div>
+    <button id="trial-dep-btn" onclick="skipTrial()">
+      Deposit USDT &amp; play for real
+    </button>
+    <div id="trial-terms">Trial credits cannot be withdrawn. Real deposits credited instantly.</div>
+  </div>
+</div>
+
+<!-- ══ TRIAL STATUS BAR (shown during play) ══ -->
+<div id="trial-bar" style="display:none;">
+  <span id="trial-bar-icon">🎁</span>
+  <span id="trial-bar-txt">FREE TRIAL</span>
+  <span id="trial-bar-timer">24:00:00</span>
+  <span id="trial-bar-end" onclick="endTrial()" title="End trial">✕</span>
+</div>
+
+<div id="app">
+
+  <!-- HEADER -->
+  <div id="hdr">
+    <div id="logo">OXE<span>●</span>BALL</div>
+    <div id="user-badge"><div id="user-avatar">?</div><span id="user-name-lbl"></span></div>
+    <div id="bal-box">
+      <div id="bal-lbl">BALANCE (OXE)</div>
+      <div id="bal-val">0 OXE</div>
+    </div>
+  </div>
+
+  <div id="panels">
+
+    <!-- ══ PLAY PANEL ══ -->
+    <div class="panel active" id="panel-play">
+      <div id="game-wrap">
+        <canvas id="c"></canvas>
+        <div id="result-flash"></div>
+        <div id="combo-flash"></div>
+      </div>
+      <div id="ctrl-bar">
+        <!-- ROW 1: BET LABEL + BUTTONS + AUTO -->
+        <div id="ctrl-row1">
+          <span class="clabel">BET</span>
+          <div id="bet-row">
+            <button class="bbet" onclick="chBet(-99)">MIN</button>
+            <button class="bbet" onclick="chBet(-1)" style="font-size:15px;padding:4px 10px;font-weight:700;">−</button>
+            <div id="bet-disp">10 OXE</div>
+            <button class="bbet" onclick="chBet(1)" style="font-size:15px;padding:4px 10px;font-weight:700;">+</button>
+            <button class="bbet" onclick="chBet(10)">×2</button>
+            <button class="bbet" onclick="chBet(99)">MAX</button>
+          </div>
+          <span class="clabel">AUTO</span>
+          <div id="auto-tog" onclick="toggleAuto()"></div>
+        </div>
+        <!-- BET META: limits + step hint -->
+        <div style="display:flex;justify-content:space-between;align-items:center;margin:2px 0 5px;padding:0 1px;">
+          <div id="bet-limits" style="font-size:8px;color:#2a3a66;letter-spacing:.5px;">min <span id="bet-min-lbl">10</span> · max <span id="bet-max-lbl">100K</span> OXE</div>
+          <div id="bet-step-hint" style="font-size:8px;color:#9933ff;letter-spacing:.5px;opacity:0;transition:opacity .3s;font-family:'Share Tech Mono',monospace;"></div>
+        </div>
+        <!-- ROW 2: FULL WIDTH DROP BUTTON -->
+        <button id="drop-btn" onclick="dropBall()">▼ DROP BALL</button>
+        <!-- STREAK -->
+        <div id="streak-bar" style="margin-top:6px;"><div id="streak-fill"></div></div>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-top:2px;">
+          <div id="hist-row"></div>
+          <div id="streak-lbl">— streak</div>
+        </div>
+        <!-- STATS -->
+        <div id="stats-row">
+          <div class="stat-card"><div class="sv" id="stat-wins">0</div><div class="sk">WINS</div></div>
+          <div class="stat-card"><div class="sv" id="stat-total">0</div><div class="sk">DROPS</div></div>
+          <div class="stat-card"><div class="sv" id="stat-best" style="color:#00d4ff">$0</div><div class="sk">BEST</div></div>
+          <div class="stat-card"><div class="sv" id="stat-pnl" style="color:#ff5533">$0</div><div class="sk">P&amp;L</div></div>
+        </div>
+        <!-- REFERRAL BANNER -->
+        <div id="ref-banner">
+          <div id="ref-banner-title">🎁 YOUR REFERRAL LINK</div>
+          <div id="ref-link-box">
+            <div id="ref-link-txt">Loading...</div>
+            <button id="ref-copy-btn" onclick="copyRefLink()">COPY</button>
+          </div>
+          <div id="ref-stats">
+            <div class="ref-stat"><div class="rv" id="ref-count">0</div><div class="rk">REFERRALS</div></div>
+            <div class="ref-stat"><div class="rv" id="ref-earned">0</div><div class="rk">OXE EARNED</div></div>
+            <div class="ref-stat"><div class="rv" id="ref-code-disp">—</div><div class="rk">YOUR CODE</div></div>
+          </div>
+          <div id="ref-reward-flash"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ DEPOSIT PANEL ══ -->
+    <div class="panel" id="panel-deposit">
+      <div class="panel-inner">
+        <div class="csec" style="padding:16px;">
+          <!-- Token header like wallet UI -->
+          <div style="display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:14px;">
+            <div style="width:32px;height:32px;background:#009393;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:700;color:#fff;box-shadow:0 0 12px rgba(0,147,147,.5);">₮</div>
+            <span style="font-size:15px;font-weight:700;color:#fff;letter-spacing:1px;">USDT (BEP20)</span>
+            <span style="font-size:10px;color:#5566aa;border:1px solid #2a3a66;border-radius:4px;padding:1px 6px;">BEP-20</span>
+          </div>
+          <!-- QR Code -->
+          <div style="background:#fff;border-radius:12px;padding:10px;width:180px;margin:0 auto 12px;box-shadow:0 0 20px rgba(100,60,255,.3);">
+            <canvas id="qr-box"></canvas>
+          </div>
+          <!-- Address display -->
+          <div style="background:#0a0a20;border:1px solid #2a2a55;border-radius:8px;padding:10px 12px;margin-bottom:10px;">
+            <div style="font-size:8px;color:#3344aa;letter-spacing:1.5px;margin-bottom:4px;">WALLET ADDRESS</div>
+            <div id="dep-addr" style="font-family:'Share Tech Mono',monospace;font-size:10px;color:#00d4ff;word-break:break-all;line-height:1.6;">0xC843b33A3C8a20cE3AB23E59A94Df09Ee3856DEb</div>
+          </div>
+          <!-- Copy + Share buttons like wallet -->
+          <div style="display:flex;gap:8px;margin-bottom:10px;">
+            <button onclick="shareAddr()" style="flex:1;background:#1a1a33;border:1px solid #2a2a55;color:#aabbcc;font-family:'Orbitron',sans-serif;font-size:12px;padding:10px;border-radius:8px;cursor:pointer;transition:.15s;" onmouseover="this.style.background='#242444'" onmouseout="this.style.background='#1a1a33'">Share</button>
+            <button onclick="copyAddr()" style="flex:1;background:linear-gradient(135deg,#7755ee,#5533cc);border:none;color:#fff;font-family:'Orbitron',sans-serif;font-size:12px;font-weight:700;padding:10px;border-radius:8px;cursor:pointer;box-shadow:0 0 15px rgba(119,85,238,.4);transition:.15s;">Copy</button>
+          </div>
+          <!-- Warning notice -->
+          <div style="background:#0d0d22;border:1px solid #2a2a44;border-radius:8px;padding:10px 12px;display:flex;gap:8px;align-items:flex-start;">
+            <span style="color:#5566aa;font-size:14px;flex-shrink:0;">ℹ</span>
+            <div style="font-size:10px;color:#4455aa;line-height:1.7;font-family:'Share Tech Mono',monospace;">This address can only accept <b style="color:#fff;">USDT (BEP20)</b>. Sending any other tokens will result in permanent loss.</div>
+          </div>
+        </div>
+        <div class="csec">
+          <h3>🔍 VERIFY TRANSACTION</h3>
+          <div class="field-lbl field-gap">TX HASH</div>
+          <div class="field-gap"><input type="text" id="tx-input" placeholder="Paste TX hash: 0x3a7f..."/></div>
+          <button class="action-btn btn-green" id="verify-btn" onclick="verifyTx()">VERIFY DEPOSIT</button>
+          <div class="status-box" id="tx-status"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ WITHDRAW PANEL ══ -->
+    <div class="panel" id="panel-withdraw">
+      <div class="panel-inner">
+        <div class="csec">
+          <h3>💸 WITHDRAW OXE → USDT</h3>
+          <div class="net-badge">BNB SMART CHAIN — BEP-20</div>
+          <div class="info-row"><span class="k">Available</span><span class="v" id="wd-avail">0.00 USDT</span></div>
+          <div class="info-row"><span class="k">Minimum</span><span class="v">200 OXE (10 USDT)</span></div>
+          <div class="info-row"><span class="k">Fee</span><span class="v">20 OXE (1 USDT)</span></div>
+          <div style="height:1px;background:#1a1a44;margin:8px 0;"></div>
+          <div class="field-lbl">BEP-20 WALLET ADDRESS</div>
+          <div class="field-gap"><input type="text" id="wd-addr" placeholder="0x... (BEP-20)"/></div>
+          <div class="field-lbl">AMOUNT (OXE)</div>
+          <div class="field-gap"><input type="number" id="wd-amt" placeholder="Min. 200 OXE" min="10" step="1"/></div>
+          <div style="display:flex;gap:6px;margin-bottom:8px;">
+            <button class="bbet" style="flex:1;" onclick="wdPct(25)">25%</button>
+            <button class="bbet" style="flex:1;" onclick="wdPct(50)">50%</button>
+            <button class="bbet" style="flex:1;" onclick="wdPct(75)">75%</button>
+            <button class="bbet" style="flex:1;color:var(--gold);" onclick="wdPct(100)">ALL</button>
+          </div>
+          <button class="action-btn btn-purple" onclick="requestWithdraw()">REQUEST WITHDRAWAL</button>
+          <div class="status-box" id="wd-status"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ HISTORY PANEL ══ -->
+    <div class="panel" id="panel-history">
+      <div class="panel-inner">
+        <div class="csec">
+          <h3>📜 TRANSACTION HISTORY</h3>
+          <div id="tx-list"><div style="text-align:center;color:#2a3a66;font-size:11px;padding:20px 0;">No transactions yet</div></div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /panels -->
+
+  <!-- BOTTOM NAV -->
+  <div id="nav">
+    <div class="nav-item active" onclick="switchTab('play')" id="nav-play"><div class="ni">🎮</div><span>PLAY</span></div>
+    <div class="nav-item" onclick="switchTab('deposit')" id="nav-deposit"><div class="ni">💰</div><span>DEPOSIT</span></div>
+    <div class="nav-item" onclick="switchTab('withdraw')" id="nav-withdraw"><div class="ni">💸</div><span>WITHDRAW</span></div>
+    <div class="nav-item" onclick="switchTab('history')" id="nav-history"><div class="ni">📜</div><span>HISTORY</span></div>
+  </div>
+</div>
+
+
+<!-- TRIAL EXPIRED MODAL -->
+<div id="trial-expired">
+  <div id="trial-expired-box">
+    <div style="font-size:40px;margin-bottom:10px;">⏰</div>
+    <h2>TRIAL EXPIRED</h2>
+    <p>Your 24-hour free trial has ended.<br/>Deposit USDT to get OXE and keep playing!</p>
+    <button id="trial-dep-now" onclick="document.getElementById('trial-expired').style.display='none';switchTab('deposit');">
+      💰 DEPOSIT USDT → GET OXE
+    </button>
+    <button style="width:100%;background:transparent;border:1px solid #2a2a44;color:#3344aa;font-family:'Orbitron',sans-serif;font-size:11px;padding:9px;border-radius:8px;cursor:pointer;" onclick="document.getElementById('trial-expired').style.display='none'">
+      Maybe later
+    </button>
+  </div>
+</div>
+
+<div id="notif"></div>
+
+<script>
+// ═══════════════════════════════════════════════
+//  AUDIO
+// ═══════════════════════════════════════════════
+// ── Fast fetch with abort timeout — fails fast instead of hanging ──
+function fetchJSON(url, opts, ms){
+  ms = ms || 5000;
+  var ctrl = new AbortController();
+  var t = setTimeout(function(){ ctrl.abort(); }, ms);
+  return fetch(url, Object.assign({signal: ctrl.signal}, opts))
+    .then(function(r){
+      clearTimeout(t);
+      if(!r.ok && r.status >= 500) return {error:'Server error ('+r.status+')'};
+      return r.json();
+    })
+    .catch(function(e){
+      clearTimeout(t);
+      if(e.name==='AbortError') throw Object.assign(new Error('Request timed out'), {name:'AbortError'});
+      throw e;
+    });
+}
+
+const AC=window.AudioContext||window.webkitAudioContext;
+let ac;
+function getAC(){if(!ac)ac=new AC();if(ac.state==='suspended')ac.resume();return ac;}
+function tone(freq,dur,type='sine',vol=.3,decay=true){
+  try{
+    const a=getAC(),o=a.createOscillator(),g=a.createGain();
+    o.connect(g);g.connect(a.destination);
+    o.type=type;o.frequency.value=freq;
+    g.gain.setValueAtTime(vol,a.currentTime);
+    if(decay)g.gain.exponentialRampToValueAtTime(.001,a.currentTime+dur);
+    o.start();o.stop(a.currentTime+dur);
+  }catch(e){}
+}
+const snd={
+  peg:()=>{
+    let f=400+Math.random()*600;
+    tone(f,.04,'triangle',.18);
+    tone(f*2,.03,'sine',.08);
+    setTimeout(()=>tone(f*.6,.07,'sine',.05),15);
+  },
+  win:()=>[523,659,784,1047].forEach((f,i)=>setTimeout(()=>tone(f,.15,'sine',.25),i*80)),
+  bigWin:()=>{
+    [523,659,784,1047,1318].forEach((f,i)=>setTimeout(()=>tone(f,.2,'sine',.35),i*65));
+    setTimeout(()=>tone(2093,.5,'sine',.3),380);
+  },
+  loss:()=>{tone(220,.22,'sawtooth',.15);setTimeout(()=>tone(160,.28,'sawtooth',.1),120);},
+  drop:()=>{tone(660,.06,'sine',.2);setTimeout(()=>tone(880,.06,'sine',.15),60);},
+  click:()=>tone(1200,.04,'sine',.07),
+  deposit:()=>[440,554,659,880].forEach((f,i)=>setTimeout(()=>tone(f,.2,'sine',.28),i*90)),
+};
+
+// ═══════════════════════════════════════════════
+//  STATE
+// ═══════════════════════════════════════════════
+let balance=0,autoMode=false,autoTimer=null;
+let streak=0,combo=0,dropping=false,balls=[],pegs=[],animId;
+let statWins=0,statTotal=0,statBest=0,statPnl=0;
+let pendingTxs=new Set(),txHistory=[];
+const OXE_RATE=20; // OXE per 1 USDT — admin can update via backend
+// Bet limits — read from shared config (admin can update via backend)
+const BET_STEP=10;
+let BET_MIN=10, BET_MAX=100000;
+let currentBet=10;
+
+function loadBetConfig(){
+  fetchJSON('/api/config', {}, 4000).then(function(cfg){
+    if(!cfg || cfg.error) return;
+    BET_MIN = parseInt(cfg.minBet)||10;
+    BET_MAX = parseInt(cfg.maxBet)||100000;
+    currentBet = Math.max(BET_MIN, BET_STEP);
+    var bd = document.getElementById('bet-disp');
+    var ml = document.getElementById('bet-min-lbl');
+    var xl = document.getElementById('bet-max-lbl');
+    if(bd) bd.textContent = currentBet.toLocaleString()+' OXE';
+    if(ml) ml.textContent = BET_MIN.toLocaleString();
+    if(xl) xl.textContent = BET_MAX>=1000?(BET_MAX/1000)+'K':BET_MAX;
+    if(typeof _betStep!=='undefined'){_betStep=BET_STEP;_betTaps=0;}
+    // Inject Google Client ID if server provides it
+    if(cfg.googleClientId){
+      var gEl = document.getElementById('g_id_onload');
+      if(gEl) gEl.setAttribute('data-client_id', cfg.googleClientId);
+      if(typeof google!=='undefined' && google.accounts){
+        google.accounts.id.initialize({
+          client_id: cfg.googleClientId,
+          callback: onGoogleCredential,
+          auto_select: false,
+          cancel_on_tap_outside: true
+        });
+        var wrap = document.getElementById('google-btn-wrap');
+        if(wrap) wrap.style.display = '';
+      }
+    }
+  }).catch(function(){}); // silent — use defaults if server unavailable
+}
+// Trial state (hoisted so all functions can access)
+let trialActive=false,trialExpiry=null,trialInterval=null,isRealMoney=false;
+const TRIAL_KEY='oxeball_trial_v1',TRIAL_HOURS=24,TRIAL_MS=86400000,TRIAL_CREDITS=200;
+
+// ═══════════════════════════════════════════════
+//  CANVAS + GEOMETRY
+// ═══════════════════════════════════════════════
+const canvas=document.getElementById('c');
+const ctx=canvas.getContext('2d');
+
+// Responsive: fit to app width
+function resizeCanvas(){
+  let appW=document.getElementById('app').clientWidth||420;
+  canvas.width=appW;
+  canvas.height=Math.round(appW*1.05);
+  buildPegs();
+  drawScene();
+}
+
+const ROWS=10;
+const BALL_R=7;
+let W,H,PX,PT,SLOT_H,PEG_R;
+
+// MULTIPLIERS — mixed plus/minus
+// ALL slots: positive = WIN × bet, negative = LOSE × bet (same math)
+const MULTS=[
+  -1,  -5,  4,  -2,
+  -10,  20, -3,  -50,
+   2,  -20,  8,  -1,
+  -5,   3,  -2,  -10,
+  -30,  4,  -1,  20,
+   2,  -50, -3,   8,
+  -15,  1.5,-2,  -20
+];
+
+const SLOT_COLORS={
+  // WIN — cool spectrum
+  20:   {bg:'#1a0040',st:'#dd00ff',tx:'#ff99ff',glow:'#cc00ee'},
+  8:    {bg:'#001040',st:'#0055ee',tx:'#55aaff',glow:'#0033cc'},
+  4:    {bg:'#001830',st:'#0088cc',tx:'#22ccee',glow:'#006699'},
+  3:    {bg:'#001a10',st:'#007722',tx:'#22dd66',glow:'#005511'},
+  2:    {bg:'#001208',st:'#006622',tx:'#11cc55',glow:'#004411'},
+  1.5:  {bg:'#141200',st:'#886600',tx:'#ddcc33',glow:'#665500'},
+  // LOSS — red gradient, darker = bigger loss
+  '-1':  {bg:'#180000',st:'#882200',tx:'#ff8866',glow:'#551100'},
+  '-2':  {bg:'#1e0000',st:'#aa2200',tx:'#ff6644',glow:'#771100'},
+  '-3':  {bg:'#220000',st:'#cc2200',tx:'#ff5533',glow:'#991100'},
+  '-5':  {bg:'#260000',st:'#dd1100',tx:'#ff3311',glow:'#bb0000'},
+  '-10': {bg:'#1c0000',st:'#ee2200',tx:'#ff5500',glow:'#cc1100'},
+  '-15': {bg:'#160000',st:'#ff2200',tx:'#ff6600',glow:'#dd1100'},
+  '-20': {bg:'#110000',st:'#ff1100',tx:'#ff4400',glow:'#ee0000'},
+  '-30': {bg:'#0d0000',st:'#ff0800',tx:'#ff3300',glow:'#ff0000'},
+  '-50': {bg:'#070000',st:'#ff0000',tx:'#ff2200',glow:'#ff0000'},
+};
+
+function sc(m){
+  return SLOT_COLORS[String(m)]||SLOT_COLORS[m]||{bg:'#111',st:'#333',tx:'#888',glow:'#222'};
+}
+
+function slotLabel(m){
+  if(m<0) return '-'+Math.abs(m)+'x';
+  return m+'x';
+}
+
+// Indices of win slots (positive values) in MULTS array
+const WIN_SLOTS=[2,5,8,10,17,19,20,22,25];
+// Indices of loss slots (negative values) — all others
+const ALL_IDX=[...Array(MULTS.length).keys()];
+const LOSE_SLOTS=ALL_IDX.filter(i=>MULTS[i]<0);
+// Pad LOSE_SLOTS to weight smaller losses more (appear more often)
+const LOSE_WEIGHTED=[
+  ...LOSE_SLOTS,
+  ...LOSE_SLOTS.filter(i=>Math.abs(MULTS[i])<=5),   // extra weight on small losses
+  ...LOSE_SLOTS.filter(i=>Math.abs(MULTS[i])<=3),   // even more on -1,-2,-3
+];
+
+function biasedSlot(){
+  return Math.random()<0.10
+    ? WIN_SLOTS[Math.floor(Math.random()*WIN_SLOTS.length)]
+    : LOSE_WEIGHTED[Math.floor(Math.random()*LOSE_WEIGHTED.length)];
+}
+
+// ═══════════════════════════════════════════════
+//  BUILD PEGS — triangular formation like image
+// ═══════════════════════════════════════════════
+function buildPegs(){
+  W=canvas.width; H=canvas.height;
+  PEG_R=Math.max(3,Math.round(W*0.007));
+  PX=Math.round(W*0.07);
+  SLOT_H=Math.round(H*0.09);
+  // PT = where first peg row starts (leave top 22% as open drop zone)
+  PT=Math.round(H*0.22);
+  pegs=[];
+
+  // Triangle apex and base corners (inside the neon border)
+  let apexX=W/2, apexY=8;
+  let baseY=H-SLOT_H-6;
+  let baseL=PX, baseR=W-PX;
+
+  // For each row, interpolate the left/right boundary of the triangle at that Y
+  // then distribute pegs evenly within it, with margin so they stay inside
+  let pegAreaTop=PT;           // first row Y (below drop gap)
+  let pegAreaBot=baseY-PEG_R*2; // last row Y
+  let margin=PEG_R+8;           // keep pegs clearly inside triangle
+
+  for(let r=0;r<ROWS;r++){
+    let t=(r)/(ROWS-1);         // 0 at top row, 1 at bottom row
+    let ry=pegAreaTop+t*(pegAreaBot-pegAreaTop);
+
+    // Triangle boundary at this Y (linear interp from apex to base)
+    let tFrac=(ry-apexY)/(baseY-apexY);
+    let leftBound= apexX + tFrac*(baseL-apexX) + margin;
+    let rightBound= apexX + tFrac*(baseR-apexX) - margin;
+    let rowW=rightBound-leftBound;
+
+    let cols=r+2;
+    let sp= cols>1 ? rowW/(cols-1) : 0;
+    let startX= cols>1 ? leftBound : W/2;
+
+    for(let c=0;c<cols;c++){
+      let px= cols>1 ? startX+c*sp : W/2;
+      pegs.push({x:px, y:ry, lit:false, litAt:0});
+    }
+  }
+}
+
+// ═══════════════════════════════════════════════
+//  DRAW — matching the image aesthetic
+// ═══════════════════════════════════════════════
+function drawBg(){
+  // Deep dark purple background
+  ctx.fillStyle='#04040e';
+  ctx.fillRect(0,0,W,H);
+
+  // Hexagonal honeycomb pattern (subtle)
+  drawHexGrid();
+
+  // Triangular neon border matching the image
+  drawTriangleBorder();
+}
+
+function drawHexGrid(){
+  const S=14; // hex size
+  const HW=S*Math.sqrt(3);
+  const HH=S*2;
+  ctx.save();
+  // Clip to triangle area
+  ctx.beginPath();
+  ctx.moveTo(W/2, 4);
+  ctx.lineTo(W-PX+20, H-SLOT_H+10);
+  ctx.lineTo(PX-20, H-SLOT_H+10);
+  ctx.closePath();
+  ctx.clip();
+
+  ctx.strokeStyle='rgba(60,40,120,0.35)';
+  ctx.lineWidth=0.7;
+  for(let row=0;row*HH*0.75<H+HH;row++){
+    for(let col=0;col*HW<W+HW;col++){
+      let cx=col*HW+(row%2===0?0:HW/2);
+      let cy=row*HH*0.75;
+      drawHex(cx,cy,S);
+    }
+  }
+  ctx.restore();
+}
+
+function drawHex(cx,cy,s){
+  ctx.beginPath();
+  for(let i=0;i<6;i++){
+    let a=Math.PI/180*(60*i-30);
+    let x=cx+s*Math.cos(a),y=cy+s*Math.sin(a);
+    i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);
+  }
+  ctx.closePath();
+  ctx.stroke();
+}
+
+function drawTriangleBorder(){
+  // Outer glow border — electric purple/blue like the image
+  let apex={x:W/2,y:4};
+  let bl={x:PX-18,y:H-SLOT_H+8};
+  let br={x:W-PX+18,y:H-SLOT_H+8};
+
+  // Outer thick glow
+  ctx.save();
+  ctx.shadowColor='#9933ff';
+  ctx.shadowBlur=22;
+  ctx.strokeStyle='#7700dd';
+  ctx.lineWidth=3;
+  ctx.beginPath();
+  ctx.moveTo(apex.x,apex.y);
+  ctx.lineTo(br.x,br.y);
+  ctx.lineTo(bl.x,bl.y);
+  ctx.closePath();
+  ctx.stroke();
+  ctx.restore();
+
+  // Inner thin bright line
+  ctx.save();
+  ctx.shadowColor='#cc44ff';
+  ctx.shadowBlur=10;
+  ctx.strokeStyle='#aa22ff';
+  ctx.lineWidth=1.5;
+  ctx.beginPath();
+  ctx.moveTo(apex.x,apex.y);
+  ctx.lineTo(br.x,br.y);
+  ctx.lineTo(bl.x,bl.y);
+  ctx.closePath();
+  ctx.stroke();
+  ctx.restore();
+
+  // ── DROP INDICATOR — just a subtle glowing dot at apex ──
+  ctx.save();
+  ctx.shadowColor='#00d4ff'; ctx.shadowBlur=18;
+  ctx.beginPath();
+  ctx.arc(W/2, 10, 5, 0, Math.PI*2);
+  ctx.fillStyle='#00d4ff';
+  ctx.fill();
+  ctx.shadowBlur=0;
+  ctx.restore();
+}
+
+function drawPegs(){
+  const R=PEG_R;
+  pegs.forEach(p=>{
+    let now=Date.now();
+    let lit=p.lit&&(now-p.litAt<150);
+    let alpha=lit?1:0;
+
+    // Outer ring (dark metal)
+    ctx.beginPath();
+    ctx.arc(p.x,p.y,R+3,0,Math.PI*2);
+    ctx.fillStyle='#0a0a28';
+    ctx.fill();
+    ctx.strokeStyle=lit?'rgba(0,212,255,0.5)':'rgba(40,40,120,0.6)';
+    ctx.lineWidth=1;
+    ctx.stroke();
+
+    // Main ring body
+    ctx.beginPath();
+    ctx.arc(p.x,p.y,R,0,Math.PI*2);
+    // metallic gradient
+    let gm=ctx.createRadialGradient(p.x-R*.3,p.y-R*.3,0,p.x,p.y,R);
+    if(lit){
+      gm.addColorStop(0,'#88ddff');
+      gm.addColorStop(0.4,'#0099cc');
+      gm.addColorStop(1,'#002244');
+    } else {
+      gm.addColorStop(0,'#5566aa');
+      gm.addColorStop(0.4,'#2233aa');
+      gm.addColorStop(1,'#040420');
+    }
+    ctx.fillStyle=gm;
+    if(lit){ctx.shadowColor='#00d4ff';ctx.shadowBlur=20;}
+    ctx.fill();
+    ctx.shadowBlur=0;
+
+    // Inner dark hole (ring look)
+    ctx.beginPath();
+    ctx.arc(p.x,p.y,R*.48,0,Math.PI*2);
+    ctx.fillStyle='#020210';
+    ctx.fill();
+
+    // Inner ring
+    ctx.beginPath();
+    ctx.arc(p.x,p.y,R*.48,0,Math.PI*2);
+    ctx.strokeStyle=lit?'#00d4ff':'#3344aa';
+    ctx.lineWidth=lit?1.5:0.8;
+    if(lit){ctx.shadowColor='#00d4ff';ctx.shadowBlur=12;}
+    ctx.stroke();
+    ctx.shadowBlur=0;
+
+    // Top glint
+    ctx.beginPath();
+    ctx.arc(p.x-R*.28,p.y-R*.28,R*.22,0,Math.PI*2);
+    ctx.fillStyle=lit?'rgba(255,255,255,.8)':'rgba(180,200,255,.25)';
+    ctx.fill();
+  });
+}
+
+function drawSlots(){
+  let n=MULTS.length;
+  let availW=W-PX*2;
+  let sw=availW/n;
+  let sy=H-SLOT_H;
+
+  // Slot tray background
+  ctx.fillStyle='#05050f';
+  ctx.strokeStyle='#1a1a44';
+  ctx.lineWidth=1;
+  ctx.beginPath();
+  ctx.rect(PX,sy,availW,SLOT_H);
+  ctx.fill();ctx.stroke();
+
+  for(let i=0;i<n;i++){
+    let m=MULTS[i],c=sc(m);
+    let sx=PX+i*sw;
+    // slot bg
+    ctx.fillStyle=c.bg;
+    ctx.strokeStyle=c.st;
+    ctx.lineWidth=1;
+    ctx.beginPath();
+    ctx.rect(sx+1,sy+2,sw-2,SLOT_H-4);
+    ctx.fill();ctx.stroke();
+
+    // glow on big multis
+    if(Math.abs(m)>=4){
+      ctx.shadowColor=c.glow;
+      ctx.shadowBlur=Math.abs(m)>=10?20:Math.abs(m)>=4?14:10;
+    }
+
+    // text
+    ctx.fillStyle=c.tx;
+    let fsz=sw<22?8:sw<28?9:sw<34?10:11;
+    ctx.font=`700 ${fsz}px Orbitron,sans-serif`;
+    ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.fillText(slotLabel(m),sx+sw/2,sy+SLOT_H/2);
+    ctx.shadowBlur=0;
+  }
+
+  // top border glow line
+  ctx.shadowColor='#9933ff';ctx.shadowBlur=8;
+  ctx.strokeStyle='#6622cc';ctx.lineWidth=1.5;
+  ctx.beginPath();ctx.moveTo(PX,sy);ctx.lineTo(W-PX,sy);ctx.stroke();
+  ctx.shadowBlur=0;
+}
+
+function drawBalls(){
+  balls.forEach(b=>{
+    // outer glow
+    ctx.shadowColor=b.color;ctx.shadowBlur=20;
+    ctx.beginPath();ctx.arc(b.x,b.y,BALL_R,0,Math.PI*2);
+    let g=ctx.createRadialGradient(b.x-BALL_R*.35,b.y-BALL_R*.35,0,b.x,b.y,BALL_R);
+    g.addColorStop(0,'#ffffff');
+    g.addColorStop(0.25,'#eeeeff');
+    g.addColorStop(0.6,b.color);
+    g.addColorStop(1,'#050510');
+    ctx.fillStyle=g;ctx.fill();
+    ctx.shadowBlur=0;
+
+    // ring on ball
+    ctx.beginPath();ctx.arc(b.x,b.y,BALL_R,0,Math.PI*2);
+    ctx.strokeStyle='rgba(255,255,255,.3)';ctx.lineWidth=1;ctx.stroke();
+
+    // center dot
+    ctx.beginPath();ctx.arc(b.x,b.y,BALL_R*.25,0,Math.PI*2);
+    ctx.fillStyle='rgba(255,255,255,.6)';ctx.fill();
+  });
+}
+
+function drawScene(){
+  if(!W)return;
+  drawBg();drawPegs();drawSlots();
+}
+
+// ═══════════════════════════════════════════════
+//  PHYSICS
+// ═══════════════════════════════════════════════
+function frame(){
+  drawBg();drawPegs();drawSlots();drawBalls();updateBalls();
+  if(balls.length)animId=requestAnimationFrame(frame);
+  else{
+    drawScene();dropping=false;
+    if(!autoMode)document.getElementById('drop-btn').disabled=false;
+    if(autoMode)autoTimer=setTimeout(()=>dropBall(),700);
+  }
+}
+
+function slotCX(i){
+  let n=MULTS.length,sw=(W-PX*2)/n;
+  return PX+sw*i+sw/2;
+}
+function getSlot(x){
+  let n=MULTS.length,sw=(W-PX*2)/n;
+  return Math.max(0,Math.min(n-1,Math.floor((x-PX)/sw)));
+}
+
+function updateBalls(){
+  for(let i=balls.length-1;i>=0;i--){
+    let b=balls[i];
+    b.vy+=0.48;b.vx*=0.99;
+    b.x+=b.vx;b.y+=b.vy;
+    pegs.forEach(p=>{
+      let dx=b.x-p.x,dy=b.y-p.y,d=Math.hypot(dx,dy);
+      let minD=PEG_R+1+BALL_R;
+      if(d<minD){
+        let nx=dx/d,ny=dy/d,dot=b.vx*nx+b.vy*ny;
+        b.vx-=2*dot*nx;b.vy-=2*dot*ny;
+        b.vx+=(Math.random()-.5)*1.8;
+        b.x=p.x+nx*(minD+1);
+        b.y=p.y+ny*(minD+1);
+        b.vy*=0.68;
+        p.lit=true;p.litAt=Date.now();
+        snd.peg();
+        b.vx+=(slotCX(b.targetSlot)-b.x)*0.012;
+      }
+    });
+    if(b.x<PX+BALL_R){b.x=PX+BALL_R;b.vx=Math.abs(b.vx);}
+    if(b.x>W-PX-BALL_R){b.x=W-PX-BALL_R;b.vx=-Math.abs(b.vx);}
+    if(b.y>=H-SLOT_H-BALL_R){
+      let slot=getSlot(b.x),m=MULTS[slot];
+      let bet=currentBet;
+      // Same calculation for win AND loss: amount = bet * |m|
+      // Win: balance += bet*m   (positive m)
+      // Loss: balance -= bet*|m| (negative m, same math mirrored)
+      let amount=+(bet*Math.abs(m)).toFixed(2);
+      if(m>0){
+        // WIN: get back bet + profit (bet already deducted at drop)
+        balance=+(balance+amount).toFixed(2);
+      } else {
+        // LOSS: restore bet first, then deduct full loss from balance
+        // net = balance_before_bet - (bet * |m|)
+        balance=+(balance+bet).toFixed(2); // restore bet
+        balance=+(balance-amount).toFixed(2); // deduct loss × multiplier
+        if(balance<0) balance=0;
+      }
+      updateBalance();onResult(amount,bet,m);
+      balls.splice(i,1);
+    }
+  }
+}
+
+// ═══════════════════════════════════════════════
+//  GAME LOGIC
+// ═══════════════════════════════════════════════
+function onResult(amount,bet,m){
+  // amount = bet * |m| (always positive — direction set by sign of m)
+  statTotal++;
+  if(m>0){
+    // ── WIN ──
+    let profit=+(amount-bet).toFixed(2);
+    statPnl=+(statPnl+profit).toFixed(2);
+    statWins++;streak++;combo++;
+    if(amount>statBest)statBest=amount;
+    (m>=8?snd.bigWin:snd.win)();
+    showFlash(`+${Math.round(amount)} OXE  ${m}x`, m>=8?'#dd00ff':m>=4?'#00d4ff':'#00ff88');
+    if(combo>=3)showCombo(`${combo}x COMBO 🔥`);
+    addHist(`+${Math.round(profit)} OXE`,'hw');
+    spawnParticles(m>=8?20:8, m>=8?'#dd00ff':'#00d4ff');
+    if(m>=8){canvas.closest('#game-wrap').classList.add('glow-win');setTimeout(()=>canvas.closest('#game-wrap').classList.remove('glow-win'),700);}
+  } else {
+    // ── LOSS ── exact mirror of win
+    let loss=+(amount).toFixed(2);
+    statPnl=+(statPnl-loss).toFixed(2);
+    streak=0;combo=0;
+    let absM=Math.abs(m);
+    (absM>=10?snd.bigWin:snd.loss)();
+    showFlash(`-${Math.round(loss)} OXE  -${absM}x`, absM>=10?'#ff0000':absM>=5?'#ff2200':'#ff4422');
+    addHist(`-${Math.round(loss)} OXE`,'hl');
+    spawnParticles(absM>=10?10:3, absM>=10?'#ff0000':'#cc2200');
+    if(absM>=20){canvas.closest('#game-wrap').style.boxShadow='0 0 60px rgba(255,0,0,0.5)';setTimeout(()=>canvas.closest('#game-wrap').style.boxShadow='',700);}
+  }
+  updateStreak();updateStats();
+}
+
+function showFlash(t,c){
+  let el=document.getElementById('result-flash');
+  el.textContent=t;el.style.color=c;
+  el.style.textShadow=`0 0 40px ${c}`;
+  el.style.opacity='1';
+  setTimeout(()=>el.style.opacity='0',950);
+}
+function showCombo(t){
+  let el=document.getElementById('combo-flash');
+  el.textContent=t;el.style.opacity='1';
+  setTimeout(()=>el.style.opacity='0',1300);
+}
+function spawnParticles(n,col){
+  let gw=document.getElementById('game-wrap');
+  for(let i=0;i<n;i++){
+    let d=document.createElement('div');
+    d.className='particle';
+    let sz=3+Math.random()*5;
+    d.style.cssText=`width:${sz}px;height:${sz}px;background:${col};left:${15+Math.random()*70}%;top:${35+Math.random()*35}%;animation-duration:${.5+Math.random()*.7}s;`;
+    gw.appendChild(d);
+    setTimeout(()=>d.remove(),1400);
+  }
+}
+
+function dropBall(){
+  if(balance<=0){
+    if(trialActive && !isRealMoney){
+      notify('Trial OXE empty! Deposit USDT to get more OXE','warn');
+      switchTab('deposit');
+    } else {
+      notify('Deposit USDT to get OXE and play!','warn');
+      switchTab('deposit');
+    }
+    return;
+  }
+  let bet=currentBet;
+  if(balance<bet){notify('Insufficient balance','warn');return;}
+  balance=+(balance-bet).toFixed(2);
+  updateBalance();dropping=true;
+if(currentUser)_incrementUserGames(currentUser.uid);
+  document.getElementById('drop-btn').disabled=true;
+  snd.drop();
+  let target=biasedSlot();
+  balls.push({
+    x:W/2+(Math.random()-.5)*4,y:14,
+    vx:(Math.random()-.5)*1.5,vy:0,
+    color:`hsl(${Math.random()*80+200},100%,70%)`,
+    targetSlot:target
+  });
+  cancelAnimationFrame(animId);animId=requestAnimationFrame(frame);
+}
+
+let _betTaps=0, _betStep=BET_STEP;
+
+function chBet(d){
+  snd.click();
+  if(d===99){
+    // MAX
+    currentBet=Math.max(BET_MIN, Math.floor(balance/BET_STEP)*BET_STEP);
+    _betTaps=0; _betStep=BET_STEP;
+  } else if(d===-99){
+    // MIN
+    currentBet=BET_MIN;
+    _betTaps=0; _betStep=BET_STEP;
+  } else if(d===10){
+    // ×2
+    currentBet=Math.min(BET_MAX, Math.round(currentBet*2/BET_STEP)*BET_STEP);
+    _betTaps=0; _betStep=BET_STEP;
+  } else if(d>0){
+    // + : every 3 taps the step triples (3+1 escalation)
+    _betTaps++;
+    if(_betTaps>3){
+      _betTaps=1;
+      _betStep=Math.min(_betStep*3, Math.max(BET_STEP, Math.round(currentBet*0.5/BET_STEP)*BET_STEP));
+    }
+    currentBet=Math.min(BET_MAX, Math.round((currentBet+_betStep)/BET_STEP)*BET_STEP);
+    // Show step size hint briefly
+    _showStepHint('+'+_betStep.toLocaleString());
+  } else {
+    // − : go back one step, shrink step if needed
+    _betTaps=0;
+    currentBet=Math.max(BET_MIN, Math.round((currentBet-_betStep)/BET_STEP)*BET_STEP);
+    if(_betStep>BET_STEP) _betStep=Math.max(BET_STEP, Math.round(_betStep/3/BET_STEP)*BET_STEP);
+    _showStepHint('-'+_betStep.toLocaleString());
+  }
+  document.getElementById('bet-disp').textContent=currentBet.toLocaleString()+' OXE';
+}
+
+let _stepHintTimer=null;
+function _showStepHint(txt){
+  let el=document.getElementById('bet-step-hint');
+  if(!el) return;
+  el.textContent='step: '+txt+' OXE';
+  el.style.opacity='1';
+  clearTimeout(_stepHintTimer);
+  _stepHintTimer=setTimeout(()=>el.style.opacity='0',900);
+}
+
+function toggleAuto(){
+  snd.click();autoMode=!autoMode;
+  let t=document.getElementById('auto-tog');
+  if(autoMode){
+    t.classList.add('on');notify('Auto-drop ON','info');
+    if(!dropping)dropBall();
+  } else {
+    t.classList.remove('on');clearTimeout(autoTimer);
+    document.getElementById('drop-btn').disabled=false;
+    notify('Auto-drop OFF','info');
+  }
+}
+
+// ═══════════════════════════════════════════════
+//  UI
+// ═══════════════════════════════════════════════
+
+// ═══════════════════════════════════════════════
+//  REFERRAL SYSTEM
+// ═══════════════════════════════════════════════
+const REF_REWARD = 15;      // OXE rewarded to referrer per signup
+const REFS_KEY   = 'oxeball_refs_v1';
+
+function genRefCode(uid){
+  // 6-char alphanumeric code derived from uid
+  return ('OXE'+uid.replace(/[^A-Z0-9]/gi,'')).toUpperCase().slice(0,8);
+}
+
+function loadRefs(){
+  try{ return JSON.parse(localStorage.getItem(REFS_KEY)||'{}'); }catch(e){ return {}; }
+}
+function saveRefs(r){ localStorage.setItem(REFS_KEY, JSON.stringify(r)); }
+
+function getMyRefData(){
+  if(!currentUser) return null;
+  let refs = loadRefs();
+  let code = genRefCode(currentUser.uid);
+  if(!refs[code]) refs[code] = { uid:currentUser.uid, count:0, earned:0, referrals:[] };
+  saveRefs(refs);
+  return { code, ...refs[code] };
+}
+
+function showRefBanner(){
+  if(!currentUser || currentUser.method==='guest' || !API.hasToken()) return;
+  API.getReferral().then(data=>{
+    if(!data||data.error) return;
+    document.getElementById('ref-link-txt').textContent = data.url;
+    document.getElementById('ref-code-disp').textContent = data.code;
+    document.getElementById('ref-count').textContent = data.count;
+    document.getElementById('ref-earned').textContent = data.earned+' OXE';
+    document.getElementById('ref-banner').style.display = 'block';
+  }).catch(()=>{});
+}
+
+function copyRefLink(){
+  let txt = document.getElementById('ref-link-txt').textContent;
+  navigator.clipboard.writeText(txt)
+    .then(()=>{ snd.click(); notify('📋 Referral link copied!','info'); })
+    .catch(()=>{ window.getSelection().selectAllChildren(document.getElementById('ref-link-txt')); });
+}
+
+function prefillRefCode(){
+  // Check URL for ?ref=CODE
+  let params = new URLSearchParams(window.location.search);
+  let refCode = params.get('ref');
+  if(refCode){
+    let inp = document.getElementById('inp-referral');
+    inp.value = refCode.toUpperCase();
+    validateRefCode();
+  }
+}
+
+function validateRefCode(){
+  let inp = document.getElementById('inp-referral');
+  let code = inp.value.trim().toUpperCase();
+  let hint = document.getElementById('ref-hint');
+  if(!code){ inp.className='auth-input'; hint.textContent=''; return; }
+  let refs = loadRefs();
+  if(refs[code]){
+    inp.className='auth-input ref-valid';
+    hint.className='ref-hint ref-hint-ok';
+    hint.textContent='✓ Valid code — +'+REF_REWARD+' OXE bonus on register!';
+  } else {
+    inp.className='auth-input ref-invalid';
+    hint.className='ref-hint ref-hint-err';
+    hint.textContent='⚠ Invalid referral code';
+  }
+}
+
+function processReferral(newUid, refCode){
+  if(!refCode) return;
+  let refs = loadRefs();
+  if(!refs[refCode]) return;
+  let referrer = refs[refCode];
+  if(referrer.referrals.includes(newUid)) return; // no double reward
+  // Reward referrer
+  referrer.count++;
+  referrer.earned += REF_REWARD;
+  referrer.referrals.push(newUid);
+  saveRefs(refs);
+  // Credit OXE to referrer's balance in admin store
+  let store = JSON.parse(localStorage.getItem('oxeball_users_v2')||'{}');
+  let referrerUser = Object.values(store).find(u=>u.uid===referrer.uid);
+  if(referrerUser){
+    referrerUser.balance = (referrerUser.balance||0) + REF_REWARD;
+    referrerUser.refEarned = (referrerUser.refEarned||0) + REF_REWARD;
+    localStorage.setItem('oxeball_users_v2', JSON.stringify(store));
+    // If referrer is currently logged in, update live balance
+    if(currentUser && currentUser.uid === referrer.uid){
+      balance += REF_REWARD;
+      updateBalance();
+      showRefRewardFlash('+'+REF_REWARD+' OXE from your referral!');
+    }
+  }
+  // Log referral event to admin DB
+  try{
+    let adminDb = JSON.parse(localStorage.getItem('oxeball_admin_v1')||'{}');
+    if(!adminDb.referrals) adminDb.referrals=[];
+    adminDb.referrals.push({
+      code:refCode, referrerUid:referrer.uid,
+      newUserUid:newUid, reward:REF_REWARD,
+      time:new Date().toISOString()
+    });
+    localStorage.setItem('oxeball_admin_v1', JSON.stringify(adminDb));
+  }catch(e){}
+}
+
+function showRefRewardFlash(msg){
+  let el = document.getElementById('ref-reward-flash');
+  if(!el) return;
+  el.textContent = msg;
+  el.style.display = 'block';
+  setTimeout(()=>el.style.display='none', 4000);
+}
+
+let _balSyncTimer=null;
+function updateBalance(){
+  let oxe=Math.round(balance);
+  let usdt=(balance/OXE_RATE).toFixed(2);
+  document.getElementById('bal-val').textContent=oxe.toLocaleString()+' OXE';
+  document.getElementById('wd-avail').textContent=oxe.toLocaleString()+' OXE (~$'+usdt+' USDT)';
+  if(trialActive && !isRealMoney) saveTrial();
+  // Sync balance to server (debounced 2s to avoid flooding)
+  if(currentUser && !trialActive && API.hasToken()){
+    clearTimeout(_balSyncTimer);
+    _balSyncTimer=setTimeout(()=>API.setBalance(balance),2000);
+  }
+}
+function updateStreak(){
+  document.getElementById('streak-fill').style.width=Math.min(100,streak*8)+'%';
+  document.getElementById('streak-lbl').textContent=streak>0?`🔥 ${streak} streak`:'— streak';
+}
+function updateStats(){
+  document.getElementById('stat-wins').textContent=statWins;
+  document.getElementById('stat-total').textContent=statTotal;
+  document.getElementById('stat-best').textContent=Math.round(statBest)+' OXE';
+  let p=document.getElementById('stat-pnl');
+  p.textContent=(statPnl>=0?'+':'')+Math.round(statPnl);
+  p.style.color=statPnl>=0?'#00ff88':'#ff5533';
+}
+function addHist(t,cls){
+  let h=document.getElementById('hist-row');
+  let d=document.createElement('div');
+  d.className='hchip '+cls;d.textContent=t;
+  h.insertBefore(d,h.firstChild);
+  let all=h.querySelectorAll('.hchip');
+  if(all.length>12)all[all.length-1].remove();
+}
+
+function switchTab(id){
+  snd.click();
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  document.getElementById('panel-'+id).classList.add('active');
+  document.getElementById('nav-'+id).classList.add('active');
+  if(id==='play')drawScene();
+}
+
+// ═══════════════════════════════════════════════
+//  CRYPTO
+// ═══════════════════════════════════════════════
+const DEP_ADDR='0xC843b33A3C8a20cE3AB23E59A94Df09Ee3856DEb';
+function shareAddr(){
+  snd.click();
+  if(navigator.share){
+    navigator.share({title:'OXE BALL Deposit Address',text:DEP_ADDR}).catch(()=>{});
+  } else {
+    copyAddr();
+    notify('Address copied for sharing','info');
+  }
+}
+function copyAddr(){
+  snd.click();
+  navigator.clipboard.writeText(DEP_ADDR)
+    .then(()=>notify('✓ Address copied!','info'))
+    .catch(()=>notify('Select & copy the address manually','warn'));
+}
+function verifyTx(){
+  let hash=document.getElementById('tx-input').value.trim();
+  if(!hash||hash.length<60){showTxSt('⚠ Enter a valid TX hash (0x...)','fail');return;}
+  if(pendingTxs.has(hash)){showTxSt('⚠ TX already being verified','fail');return;}
+  pendingTxs.add(hash);
+  let btn=document.getElementById('verify-btn');
+  btn.disabled=true;btn.textContent='VERIFYING...';
+  showTxSt('⏳ Connecting to BSCScan API...','pending');
+  notify('Checking transaction...','info');
+  setTimeout(()=>showTxSt('📡 Fetching block data...','pending'),1200);
+  setTimeout(()=>showTxSt('🔐 Confirming USDT transfer...','pending'),2600);
+  setTimeout(()=>{
+    let amt=+(Math.random()*195+5).toFixed(2);
+    balance=+(balance+amt).toFixed(2);
+    updateBalance();
+    showTxSt(`✅ Confirmed! +${amt} USDT credited`,'ok');
+    notify(`💰 Deposit: +$${amt} USDT`,'win');
+    snd.deposit();
+    addTxHistory('DEPOSIT',oxeAmt,'Confirmed',hash,usdtAmt);
+    document.getElementById('tx-input').value='';
+    btn.disabled=false;btn.textContent='VERIFY DEPOSIT';
+    pendingTxs.delete(hash);
+  },4200);
+}
+function showTxSt(msg,type){
+  let el=document.getElementById('tx-status');
+  el.style.display='block';
+  el.className='status-box st-'+(type==='ok'?'ok':type==='pending'?'pending':'fail');
+  el.textContent=msg;
+  if(type!=='pending'){let b=document.getElementById('verify-btn');b.disabled=false;b.textContent='VERIFY DEPOSIT';}
+}
+function wdPct(pct){
+  snd.click();
+  let amt=Math.round(balance*pct/100);
+  document.getElementById('wd-amt').value=amt>0?amt:'';
+}
+function requestWithdraw(){
+  snd.click();
+  if(trialActive && !isRealMoney){
+    showWdSt('⚠ Trial OXE cannot be withdrawn. Deposit USDT first.','fail');
+    notify('Trial credits are not withdrawable','warn');
+    return;
+  }
+  let addr=document.getElementById('wd-addr').value.trim();
+  let amt=parseFloat(document.getElementById('wd-amt').value);
+  if(!addr||addr.length<40){showWdSt('⚠ Enter a valid BEP-20 address','fail');return;}
+  if(!amt||amt<200){showWdSt('⚠ Minimum withdrawal is 200 OXE (10 USDT)','fail');return;}
+  if(amt+20>balance){showWdSt(`⚠ Need ${amt+20} OXE (incl. 20 OXE fee)`,'fail');return;}
+  let usdtOut=(amt/OXE_RATE).toFixed(2);
+  API.withdraw(addr,amt).then(r=>{
+    if(r.error){showWdSt('⚠ '+r.error,'fail');return;}
+    balance=r.newBalance;
+    updateBalance();
+    showWdSt(`✅ ${amt} OXE (~$${usdtOut} USDT) withdrawal requested. Processing 1–24h.`,'ok');
+    notify(`Withdrawal: ${amt} OXE → $${usdtOut} USDT → ${addr.slice(0,10)}...`,'info');
+    addTxHistory('WITHDRAW',amt,'Pending',addr,usdtOut);
+  }).catch(()=>showWdSt('⚠ Server error','fail'));
+  document.getElementById('wd-addr').value='';
+  document.getElementById('wd-amt').value='';
+}
+function showWdSt(msg,type){
+  let el=document.getElementById('wd-status');
+  el.style.display='block';
+  el.className='status-box st-'+(type==='ok'?'ok':'fail');
+  el.textContent=msg;
+}
+function addTxHistory(type,amt,status,ref,usdtVal){
+  let t=new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
+  txHistory.unshift({type,amt,status,ref,time:t,usdt:usdtVal||null});
+  renderTxHistory();
+}
+function renderTxHistory(){
+  let list=document.getElementById('tx-list');
+  if(!txHistory.length){list.innerHTML='<div style="text-align:center;color:#2a3a66;font-size:11px;padding:20px 0;">No transactions yet</div>';return;}
+  list.innerHTML=txHistory.map(tx=>`
+    <div class="tx-item tx-${tx.type==='DEPOSIT'?'dep':'wd'}">
+      <div class="tx-left">
+        <div class="tx-type">${tx.type==='DEPOSIT'?'↓ DEPOSIT':'↑ WITHDRAW'}</div>
+        <div class="tx-time">${tx.time} · ${tx.ref.slice(0,12)}...</div>
+      </div>
+      <div class="tx-right">
+        <div class="tx-amt">${tx.type==='DEPOSIT'?'+':'−'}${Math.round(tx.amt)} OXE${tx.usdt?' (~$'+tx.usdt+')':''}</div>
+        <div class="tx-status" style="color:${tx.status==='Confirmed'?'#00ff88':tx.status==='Pending'?'#ffcc33':'#ff5533'}">${tx.status}</div>
+      </div>
+    </div>
+  `).join('');
+}
+
+function notify(msg,type='info'){
+  let wrap=document.getElementById('notif');
+  let d=document.createElement('div');
+  d.className='notif-item'+(type==='warn'?' warn':type==='err'?' err':type==='win'?' win':'');
+  d.textContent=msg;wrap.appendChild(d);
+  setTimeout(()=>{d.style.opacity='0';d.style.transition='opacity .4s';setTimeout(()=>d.remove(),400);},3400);
+}
+
+
+// ═══════════════════════════════════════════════
+//  QR CODE GENERATOR (pure JS, no library)
+// ═══════════════════════════════════════════════
+function drawQR(){
+  const addr = DEP_ADDR;
+  const cv = document.getElementById('qr-box');
+  if(!cv) return;
+  const size = 160;
+  cv.width = size; cv.height = size;
+  const cx = cv.getContext('2d');
+
+  // Use a simple QR matrix via data URL approach
+  // We encode address as a mini QR-like grid using a deterministic hash pattern
+  // For real QR: use qrcode.js CDN
+  const script = document.createElement('script');
+  script.src = 'https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js';
+  script.onload = function(){
+    // Clear canvas approach — use div instead
+    const tmp = document.createElement('div');
+    tmp.style.cssText = 'position:absolute;left:-9999px;top:-9999px;';
+    document.body.appendChild(tmp);
+    new QRCode(tmp, {
+      text: addr,
+      width: 154,
+      height: 154,
+      colorDark: '#000000',
+      colorLight: '#ffffff',
+      correctLevel: QRCode.CorrectLevel.M
+    });
+    setTimeout(()=>{
+      const img = tmp.querySelector('img') || tmp.querySelector('canvas');
+      if(img){
+        cx.fillStyle = '#fff';
+        cx.fillRect(0,0,size,size);
+        cx.drawImage(img, 3, 3, 154, 154);
+        // USDT logo overlay in center
+        cx.fillStyle = '#fff';
+        cx.beginPath();
+        cx.arc(size/2, size/2, 14, 0, Math.PI*2);
+        cx.fill();
+        cx.fillStyle = '#009393';
+        cx.beginPath();
+        cx.arc(size/2, size/2, 12, 0, Math.PI*2);
+        cx.fill();
+        cx.fillStyle = '#fff';
+        cx.font = 'bold 14px sans-serif';
+        cx.textAlign = 'center';
+        cx.textBaseline = 'middle';
+        cx.fillText('₮', size/2, size/2+1);
+      }
+      document.body.removeChild(tmp);
+    }, 200);
+  };
+  document.head.appendChild(script);
+}
+
+// ═══════════════════════════════════════════════
+//  INIT
+// ═══════════════════════════════════════════════
+
+// ═══════════════════════════════════════════════
+//  FREE TRIAL SYSTEM
+// ═══════════════════════════════════════════════
+// (trial vars declared above in state section)
+
+function loadTrial(){
+  try{
+    let saved = localStorage.getItem(TRIAL_KEY);
+    if(saved){
+      let d = JSON.parse(saved);
+      if(d.expiry && Date.now() < d.expiry){
+        // Resume existing trial
+        trialActive = true;
+        trialExpiry = d.expiry;
+        isRealMoney = d.realMoney || false;
+        if(!isRealMoney){
+          balance = typeof d.balance === 'number' ? d.balance : TRIAL_CREDITS;
+          updateBalance();
+        }
+        return true; // trial exists and valid
+      } else if(d.expiry && Date.now() >= d.expiry) {
+        // Expired
+        localStorage.removeItem(TRIAL_KEY);
+        return false;
+      }
+    }
+  } catch(e){}
+  return false; // no trial
+}
+
+function saveTrial(){
+  try{
+    localStorage.setItem(TRIAL_KEY, JSON.stringify({
+      expiry: trialExpiry,
+      balance: balance,
+      realMoney: isRealMoney,
+      started: trialExpiry - TRIAL_MS
+    }));
+  } catch(e){}
+}
+
+function startFreeTrial(){
+  snd.click();
+  trialActive  = true;
+  isRealMoney  = false;
+  trialExpiry  = Date.now() + TRIAL_MS;
+  balance      = TRIAL_CREDITS;
+  saveTrial();
+  updateBalance();
+  hideTrial();
+  // Make sure auth screen is fully gone
+  let authSc = document.getElementById('auth-screen');
+  if(authSc){ authSc.style.display='none'; authSc.style.opacity='0'; }
+  showTrialBar();
+  startTrialCountdown();
+  // Ensure game canvas is drawn
+  drawScene();
+  // Re-enable drop button
+  let dropBtn = document.getElementById('drop-btn');
+  if(dropBtn) dropBtn.disabled = false;
+  setTimeout(()=>notify('🎁 Free trial started! 200 OXE credits added','win'), 400);
+  setTimeout(()=>notify('Withdrawals require a real deposit','warn'), 1800);
+}
+
+function skipTrial(){
+  snd.click();
+  isRealMoney = true;
+  trialActive = false;
+  hideTrial();
+  let authSc = document.getElementById('auth-screen');
+  if(authSc){ authSc.style.display='none'; }
+  drawScene();
+  switchTab('deposit');
+  setTimeout(()=>notify('💰 Deposit USDT → receive OXE to play','info'),400);
+}
+
+function hideTrial(){
+  let ov = document.getElementById('trial-overlay');
+  ov.style.transition = 'width .4s ease, min-width .4s ease, opacity .4s ease, padding .4s ease';
+  ov.style.opacity = '0';
+  ov.style.width = '0';
+  ov.style.minWidth = '0';
+  ov.style.padding = '0';
+  ov.style.overflow = 'hidden';
+  setTimeout(()=>ov.style.display='none', 420);
+}
+
+function showTrialBar(){
+  if(!isRealMoney){
+    document.getElementById('trial-bar').style.display = 'flex';
+  }
+}
+
+function startTrialCountdown(){
+  clearInterval(trialInterval);
+  trialInterval = setInterval(()=>{
+    let rem = trialExpiry - Date.now();
+    if(rem <= 0){
+      clearInterval(trialInterval);
+      onTrialExpired();
+      return;
+    }
+    let h = Math.floor(rem/3600000);
+    let m = Math.floor((rem%3600000)/60000);
+    let s = Math.floor((rem%60000)/1000);
+    let str = [h,m,s].map(v=>String(v).padStart(2,'0')).join(':');
+    let bar = document.getElementById('trial-bar-timer');
+    if(bar) bar.textContent = str;
+    // Countdown on overlay if still visible
+    let cd = document.getElementById('trial-countdown');
+    if(cd) cd.textContent = str;
+    // Save balance periodically
+    saveTrial();
+    // Warning when 1 hour left
+    if(rem < 3600000 && rem > 3595000){
+      notify('⏰ 1 hour left on your free trial!','warn');
+    }
+    // Warning when 5 min left
+    if(rem < 300000 && rem > 295000){
+      notify('⏰ 5 minutes left on your free trial!','warn');
+    }
+    // Pulsing red timer when under 5 min
+    if(bar && rem < 300000){
+      bar.style.color = rem < 60000 ? '#ff3333' : '#ffcc00';
+      bar.style.animation = 'pulse 1s ease-in-out infinite';
+    }
+  }, 1000);
+}
+
+function onTrialExpired(){
+  trialActive = false;
+  if(!isRealMoney && balance <= 0){
+    // Show expired modal
+    let exp = document.getElementById('trial-expired');
+    if(exp) exp.style.display = 'flex';
+    // Stop auto
+    if(autoMode){ autoMode=false; clearTimeout(autoTimer); }
+    document.getElementById('drop-btn').disabled = true;
+    document.getElementById('trial-bar').style.borderColor = '#550000';
+    document.getElementById('trial-bar-txt').textContent = 'TRIAL EXPIRED';
+    document.getElementById('trial-bar-txt').style.color = '#ff5533';
+    notify('⏰ Free trial expired! Deposit to continue','err');
+  }
+}
+
+function endTrial(){
+  if(!confirm('End free trial and switch to real money mode?')) return;
+  clearInterval(trialInterval);
+  trialActive = false;
+  balance = 0;
+  updateBalance();
+  document.getElementById('trial-bar').style.display = 'none';
+  localStorage.removeItem(TRIAL_KEY);
+  switchTab('deposit');
+  notify('Deposit USDT to play with real money','info');
+}
+
+// Trial checks are inlined in dropBall, requestWithdraw, updateBalance
+
+
+// (user sync handled by API)
+
+
+// ═══════════════════════════════════════════════
+//  EMAIL VERIFICATION FLOW
+// ═══════════════════════════════════════════════
+let _pendingVerifyEmail = '';
+let _resendTimer = null;
+
+function showVerifyStep(email){
+  _pendingVerifyEmail = email;
+  document.getElementById('auth-step1').style.display = 'none';
+  document.getElementById('auth-step2').style.display = 'block';
+  document.getElementById('verify-email-disp').innerHTML = '<span>' + email + '</span>';
+  // Clear code boxes
+  for(let i=0;i<6;i++){
+    let box=document.getElementById('c'+i);
+    box.value='';box.className='code-box';
+  }
+  document.getElementById('c0').focus();
+  clearAuthMsg2();
+  startResendTimer();
+}
+
+function goBackToForm(){
+  document.getElementById('auth-step2').style.display='none';
+  document.getElementById('auth-step1').style.display='block';
+  clearInterval(_resendTimer);
+  _pendingVerifyEmail='';
+}
+
+function codeInput(idx){
+  let box=document.getElementById('c'+idx);
+  let val=box.value.replace(/[^0-9]/g,'');
+  box.value=val.slice(-1);
+  if(val) box.classList.add('filled');
+  else box.classList.remove('filled');
+  if(val && idx<5) document.getElementById('c'+(idx+1)).focus();
+  // Auto-submit when all 6 filled
+  let code=getCode();
+  if(code.length===6) setTimeout(()=>submitCode(),100);
+}
+
+function codeKey(e,idx){
+  if(e.key==='Backspace' && !document.getElementById('c'+idx).value && idx>0){
+    document.getElementById('c'+(idx-1)).focus();
+  }
+  if(e.key==='Enter') submitCode();
+  // Handle paste
+  if(e.key==='v' && (e.ctrlKey||e.metaKey)){
+    setTimeout(()=>{
+      navigator.clipboard.readText().then(txt=>{
+        let digits=txt.replace(/[^0-9]/g,'').slice(0,6);
+        for(let i=0;i<digits.length;i++){
+          let b=document.getElementById('c'+i);
+          b.value=digits[i]; b.classList.add('filled');
+        }
+        if(digits.length===6) setTimeout(()=>submitCode(),100);
+      }).catch(()=>{});
+    },50);
+  }
+}
+
+function getCode(){
+  let code='';
+  for(let i=0;i<6;i++) code+=document.getElementById('c'+i).value;
+  return code;
+}
+
+function showAuthMsg2(msg,type){
+  let el=document.getElementById('auth-msg2');
+  el.textContent=msg;
+  el.className=type==='ok'?'auth-msg-ok':'auth-msg-err';
+  el.style.cssText=type==='ok'?'background:#041208;border:1px solid rgba(0,200,80,.4);color:#44ee88':'background:#1a0404;border:1px solid rgba(255,50,50,.4);color:#ff6644';
+  el.style.display='block';
+}
+function clearAuthMsg2(){ 
+  let el=document.getElementById('auth-msg2');
+  if(el) el.style.display='none';
+}
+
+function submitCode(){
+  let code = getCode();
+  if(code.length < 6){ showAuthMsg2('⚠ Enter all 6 digits','err'); return; }
+  let btn = document.getElementById('verify-submit-btn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="auth-spinner"></span>VERIFYING...';
+  clearAuthMsg2();
+  fetchJSON('/api/auth/verify-code', {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({email:_pendingVerifyEmail, code})
+  }, 8000).then(r => {
+    btn.disabled = false;
+    btn.textContent = 'VERIFY & START PLAYING';
+    if(r.error){
+      showAuthMsg2('⚠ '+r.error, 'err');
+      document.querySelectorAll('.code-box').forEach(b=>{
+        b.style.borderColor='#ff3333';
+        setTimeout(()=>b.style.borderColor='',800);
+      });
+      return;
+    }
+    // ✅ Verified — set user, hide auth, start trial instantly
+    clearInterval(_resendTimer);
+    API.setToken(r.token);
+    currentUser = {uid:r.uid, email:r.email, username:r.username, method:'email'};
+    saveAuth(currentUser);
+    balance = r.balance||0;
+    updateBalance();
+    onAuthSuccess(currentUser, true, r.balance||0);
+    startFreeTrial();
+  }).catch(e => {
+    btn.disabled = false;
+    btn.textContent = 'VERIFY & START PLAYING';
+    showAuthMsg2(e.name==='AbortError'?'⚠ Server not responding':'⚠ Connection error','err');
+  });
+}
+
+function resendCode(){
+  clearAuthMsg2();
+  document.getElementById('resend-btn').style.display='none';
+  fetchJSON('/api/auth/resend-code',{
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({email:_pendingVerifyEmail})
+  },6000).then(r=>{
+    // Clear boxes first
+    for(let i=0;i<6;i++){let b=document.getElementById('c'+i);b.value='';b.className='code-box';}
+    startResendTimer();
+    if(r.devCode){
+      // Dev — auto-fill new code
+      for(let i=0;i<6;i++){let b=document.getElementById('c'+i);b.value=r.devCode[i]||'';b.classList.add('filled');}
+      showAuthMsg2('🔧 Dev: new code auto-filled','ok');
+    } else if(r.success){
+      showAuthMsg2('✓ New code sent to your email!','ok');
+    } else {
+      showAuthMsg2('⚠ '+(r.error||'Could not resend'),'err');
+    }
+    document.getElementById('c0').focus();
+  }).catch(()=>showAuthMsg2('⚠ Could not resend','err'));
+}
+
+function startResendTimer(){
+  let secs=60;
+  let timer=document.getElementById('resend-timer');
+  let btn=document.getElementById('resend-btn');
+  btn.style.display='none';
+  timer.textContent='Resend in '+secs+'s';
+  clearInterval(_resendTimer);
+  _resendTimer=setInterval(()=>{
+    secs--;
+    if(secs<=0){
+      clearInterval(_resendTimer);
+      timer.textContent='';
+      btn.style.display='inline';
+    } else {
+      timer.textContent='Resend in '+secs+'s';
+    }
+  },1000);
+}
+
+loadBetConfig();
+window.addEventListener('resize',()=>{resizeCanvas();});
+resizeCanvas();
+drawQR();
+
+// ── Startup: restore session instantly from cache, sync balance in background ──
+setTimeout(()=>{
+  if(!loadAuth()) return; // no cached session — show auth screen
+  // We have a cached user — show game immediately, no waiting
+  onAuthSuccess(currentUser, false, 0);
+  // Then quietly sync balance from server in background
+  fetchJSON('/api/me', {headers:{'Authorization':'Bearer '+API.getToken()}}, 4000)
+    .then(u=>{
+      if(u.error){ return; } // token expired — user stays in game with cached data
+      balance = u.balance||0;
+      updateBalance();
+      currentUser.username = u.username;
+      saveAuth(currentUser);
+    })
+    .catch(()=>{}); // offline — fine, continue with cached balance
+}, 60);
+
+// ═══════════════════════════════════════════════
+//  AUTH SYSTEM
+// ═══════════════════════════════════════════════
+const AUTH_KEY = 'oxeball_auth_v1';
+let currentUser = null;
+
+function loadAuth(){
+  if(!API.hasToken()) return false;
+  // Will validate token on first API call
+  try{
+    let cached = JSON.parse(sessionStorage.getItem('oxe_user')||'null');
+    if(cached && cached.uid){ currentUser = cached; return true; }
+  }catch(e){}
+  return false;
+}
+
+function saveAuth(user){
+  sessionStorage.setItem('oxe_user', JSON.stringify(user));
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// ─── AUTH MODE ───────────────────────────────────────────────────────────────
+let authMode = 'login';
+
+function authTab(mode){
+  authMode = mode;
+  document.getElementById('tab-login').classList.toggle('active',    mode==='login');
+  document.getElementById('tab-register').classList.toggle('active', mode==='register');
+  document.getElementById('field-username').style.display = mode==='register'?'block':'none';
+  document.getElementById('field-confirm').style.display  = mode==='register'?'block':'none';
+  document.getElementById('field-referral').style.display = mode==='register'?'block':'none';
+  document.getElementById('forgot-link').style.display    = mode==='login'?'block':'none';
+  document.getElementById('auth-submit-btn').textContent  = mode==='login'?'SIGN IN':'CREATE ACCOUNT';
+  document.getElementById('inp-password').autocomplete    = mode==='login'?'current-password':'new-password';
+  if(mode==='register') prefillRefCode();
+  clearAuthMsg();
+}
+
+function showAuthMsg(msg,type){
+  let el=document.getElementById('auth-msg');
+  el.textContent=msg;
+  el.className=type==='ok'?'auth-msg-ok':'auth-msg-err';
+  el.style.display='block';
+}
+function clearAuthMsg(){ document.getElementById('auth-msg').style.display='none'; }
+
+function setAuthLoading(on){
+  let btn=document.getElementById('auth-submit-btn');
+  btn.disabled=on;
+  btn.innerHTML=on?'<span class="auth-spinner"></span>'+(authMode==='login'?'SIGNING IN...':'SENDING CODE...'):(authMode==='login'?'SIGN IN':'CREATE ACCOUNT');
+}
+
+function togglePw(){
+  let i=document.getElementById('inp-password');
+  let e=document.getElementById('pw-eye');
+  i.type=i.type==='password'?'text':'password';
+  e.textContent=i.type==='password'?'👁':'🙈';
+}
+
+function validateEmail(e){ return /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(e); }
+
+function forgotPassword(){
+  let email=document.getElementById('inp-email').value.trim();
+  if(!validateEmail(email)){showAuthMsg('Enter your email above first','err');return;}
+  showAuthMsg('✉ Password reset sent to '+email,'ok');
+  setTimeout(()=>clearAuthMsg(),4000);
+}
+
+function submitAuth(){
+  clearAuthMsg();
+  let email = document.getElementById('inp-email').value.trim();
+  let pw    = document.getElementById('inp-password').value;
+  if(!validateEmail(email)){ showAuthMsg('⚠ Enter a valid email','err'); return; }
+  if(pw.length < 6){ showAuthMsg('⚠ Password must be 6+ characters','err'); return; }
+  if(authMode === 'register'){
+    let uname = document.getElementById('inp-username').value.trim();
+    let conf  = document.getElementById('inp-confirm').value;
+    if(uname.length < 3){ showAuthMsg('⚠ Username must be 3+ characters','err'); return; }
+    if(pw !== conf){ showAuthMsg('⚠ Passwords do not match','err'); return; }
+    doEmailRegister(email, pw, uname);
+  } else {
+    doEmailLogin(email, pw);
+  }
+}
+
+// ── REGISTER: send verification code ─────────────────────────────────────────
+function doEmailRegister(email, pw, uname){
+  setAuthLoading(true);
+  let rc = (document.getElementById('inp-referral').value||'').trim().toUpperCase();
+  fetchJSON('/api/auth/send-code', {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({email, password:pw, username:uname, refCode:rc||null})
+  }, 6000).then(r => {
+    setAuthLoading(false);
+    if(r.error){ showAuthMsg('⚠ '+r.error, 'err'); return; }
+    showVerifyStep(email);
+    if(r.devCode){
+      for(let i=0;i<6;i++){
+        let b=document.getElementById('c'+i);
+        b.value=r.devCode[i]||''; b.classList.add('filled');
+      }
+      showAuthMsg2('Dev mode — code filled automatically','ok');
+    }
+  }).catch(e => {
+    setAuthLoading(false);
+    showAuthMsg(e.name==='AbortError' ? '⚠ Server not responding' : '⚠ '+e.message, 'err');
+  });
+}
+
+// ── LOGIN: email + password ───────────────────────────────────────────────────
+function doEmailLogin(email, pw){
+  setAuthLoading(true);
+  fetchJSON('/api/auth/login', {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({email, password:pw})
+  }).then(r => {
+    setAuthLoading(false);
+    if(r.error){ showAuthMsg('⚠ '+r.error, 'err'); return; }
+    API.setToken(r.token);
+    currentUser = {uid:r.uid, email:r.email, username:r.username, method:'email'};
+    saveAuth(currentUser);
+    balance = r.balance||0;
+    updateBalance();
+    onAuthSuccess(currentUser, false, 0);
+  }).catch(e => {
+    setAuthLoading(false);
+    showAuthMsg(e.name==='AbortError' ? '⚠ Server not responding' : '⚠ '+e.message, 'err');
+  });
+}
+
+// ── GOOGLE / GMAIL — Real OAuth via Google Identity Services ─────────────────
+// Called by Google's SDK after user selects their account
+function onGoogleCredential(response) {
+  let btn  = document.getElementById('btn-google');
+  let gtxt = document.getElementById('google-txt');
+  btn.disabled = true;
+  gtxt.innerHTML = '<span class="auth-spinner"></span>Signing in...';
+  let rc = ((document.getElementById('inp-referral')||{}).value||'').trim().toUpperCase()
+        || new URLSearchParams(window.location.search).get('ref') || '';
+  fetchJSON('/api/auth/google', {
+    method: 'POST', headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({ credential: response.credential, refCode: rc||null })
+  }).then(r => {
+    gtxt.textContent = 'Continue with Gmail';
+    btn.disabled = false;
+    if(r.error){ showAuthMsg('⚠ '+r.error, 'err'); return; }
+    API.setToken(r.token);
+    currentUser = {uid:r.uid, email:r.email, username:r.username, method:'google'};
+    saveAuth(currentUser);
+    balance = r.balance||0;
+    updateBalance();
+    onAuthSuccess(currentUser, true, r.balance||0);
+  }).catch(e => {
+    gtxt.textContent = 'Continue with Gmail';
+    btn.disabled = false;
+    showAuthMsg(e.name==='AbortError' ? '⚠ Server not responding' : '⚠ Connection error', 'err');
+  });
+}
+
+function socialAuth() {
+  // Check if Google GSI is loaded and configured
+  if(typeof google === 'undefined' || !google.accounts) {
+    showAuthMsg('⚠ Google sign-in not configured. Use email below.', 'err');
+    document.getElementById('google-not-configured').style.display = 'block';
+    return;
+  }
+  google.accounts.id.prompt(notification => {
+    if(notification.isNotDisplayed() || notification.isSkippedMoment()) {
+      // Fallback: open the Google OAuth popup
+      google.accounts.id.renderButton(
+        document.getElementById('btn-google'),
+        { theme:'filled_black', size:'large', width:280, text:'continue_with' }
+      );
+    }
+  });
+}
+
+// Init Google GSI when SDK loads
+window.addEventListener('load', function() {
+  var clientId = document.getElementById('g_id_onload') &&
+                 document.getElementById('g_id_onload').getAttribute('data-client_id');
+  if(!clientId || clientId === 'GOOGLE_CLIENT_ID') {
+    // No client ID configured — hide Google button, show notice
+    var wrap = document.getElementById('google-btn-wrap');
+    if(wrap) wrap.style.display = 'none';
+    var divider = document.querySelector('.auth-divider');
+    if(divider) divider.style.display = 'none';
+    return;
+  }
+  if(typeof google !== 'undefined' && google.accounts) {
+    google.accounts.id.initialize({
+      client_id: clientId,
+      callback: onGoogleCredential,
+      auto_select: false,
+      cancel_on_tap_outside: true
+    });
+  }
+});
+
+// ── GUEST ─────────────────────────────────────────────────────────────────────
+function guestContinue(){
+  currentUser = { uid:'GUEST-'+Date.now(), username:'Guest', method:'guest' };
+  onAuthSuccess(currentUser, true, 0);
+}
+
+// ── AUTH SUCCESS — instant, no fake delays ────────────────────────────────────
+function onAuthSuccess(user, isNew, bonusOxe){
+  bonusOxe = bonusOxe||0;
+
+  // Instantly hide the auth panel (no transition delay)
+  let screen = document.getElementById('auth-screen');
+  screen.style.transition = 'none';
+  screen.style.display = 'none';
+
+  // Show user badge
+  let initials = (user.username||user.email||'G').slice(0,2).toUpperCase();
+  document.getElementById('user-avatar').textContent = initials;
+  document.getElementById('user-name-lbl').textContent = user.username||(user.email||'').split('@')[0]||'Player';
+  document.getElementById('user-badge').style.display = 'flex';
+
+  if(isNew || user.method==='guest'){
+    // Show trial panel — instantly
+    let ov = document.getElementById('trial-overlay');
+    ov.style.cssText = 'display:flex;width:300px;min-width:280px;padding:16px 14px;opacity:1;overflow:auto;';
+    if(bonusOxe > 0){
+      balance += bonusOxe;
+      updateBalance();
+      notify('🎁 +'+bonusOxe+' OXE referral bonus!','win');
+    }
+    notify('👋 Welcome, '+(user.username||'player')+'!','info');
+  } else {
+    // Returning user — straight to game
+    let trialExists = loadTrial();
+    hideTrial();
+    if(trialExists){
+      showTrialBar();
+      startTrialCountdown();
+      notify('Welcome back! Trial still active','info');
+    } else {
+      notify('Welcome back, '+(user.username||(user.email||'').split('@')[0])+'!','info');
+    }
+  }
+
+  setTimeout(()=>showRefBanner(), 400);
+}
+
+// ── SIGN OUT ──────────────────────────────────────────────────────────────────
+function signOut(){
+  API.clearToken();
+  sessionStorage.removeItem('oxe_user');
+  currentUser = null;
+  let sc = document.getElementById('auth-screen');
+  sc.style.cssText = 'display:flex;width:340px;min-width:310px;max-width:360px;opacity:1;padding:14px 16px;overflow:auto;';
+  document.getElementById('user-badge').style.display = 'none';
+  notify('Signed out','info');
+}
+
+</script>
+</body>
+</html>

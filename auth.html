@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<script src="/api.js"></script>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>OXE BALL — Sign In</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&family=Share+Tech+Mono&display=swap" rel="stylesheet"/>
+<!-- Google Identity Services SDK -->
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+<link rel="stylesheet" href="style.css"/>
+</head>
+<body>
+
+<!-- ══ AUTH PANEL ══════════════════════════════════════════════════════════ -->
+<div id="auth-wrap" class="panel">
+  <div class="logo">OXE<span>●</span>BALL</div>
+  <div class="sub">CRYPTO PLINKO GAME</div>
+
+  <!-- TABS -->
+  <div class="tabs" id="tabs">
+    <button class="tab active" data-tab="login"    onclick="switchTab('login')">SIGN IN</button>
+    <button class="tab"        data-tab="register" onclick="switchTab('register')">REGISTER</button>
+  </div>
+
+  <!-- ERROR / SUCCESS -->
+  <div id="msg" class="msg" style="display:none"></div>
+
+  <!-- GOOGLE BUTTON -->
+  <div id="google-wrap">
+    <button class="btn-google" id="btn-google" onclick="startGoogleAuth()">
+      <svg width="18" height="18" viewBox="0 0 48 48" style="flex-shrink:0">
+        <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
+        <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
+        <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
+        <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.18 1.48-4.97 2.34-8.16 2.34-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
+      </svg>
+      <span id="google-txt">Continue with Gmail</span>
+    </button>
+  </div>
+
+  <!-- METAMASK BUTTON -->
+
+  <div class="divider"><span>or use email</span></div>
+
+  <!-- EMAIL FORM — SIGN IN -->
+  <form id="form-login" onsubmit="submitLogin(event)" autocomplete="on">
+    <label>EMAIL</label>
+    <input type="email"    id="login-email"    placeholder="you@example.com" autocomplete="email" required/>
+    <label>PASSWORD</label>
+    <div class="pw-row">
+      <input type="password" id="login-password" placeholder="••••••••" autocomplete="current-password" required/>
+      <button type="button" class="pw-eye" onclick="togglePw('login-password',this)">👁</button>
+    </div>
+    <button type="button" class="link-btn" onclick="forgotPassword()">Forgot password?</button>
+    <button type="submit" class="btn-submit" id="login-submit">SIGN IN</button>
+  </form>
+
+  <!-- EMAIL FORM — REGISTER -->
+  <form id="form-register" style="display:none" onsubmit="submitRegister(event)" autocomplete="on">
+    <label>USERNAME</label>
+    <input type="text"     id="reg-username" placeholder="3–30 characters" autocomplete="username" required/>
+    <label>EMAIL</label>
+    <input type="email"    id="reg-email"    placeholder="you@example.com" autocomplete="email" required/>
+    <label>PASSWORD</label>
+    <div class="pw-row">
+      <input type="password" id="reg-password" placeholder="6+ characters" autocomplete="new-password" required/>
+      <button type="button" class="pw-eye" onclick="togglePw('reg-password',this)">👁</button>
+    </div>
+    <label>CONFIRM PASSWORD</label>
+    <div class="pw-row">
+      <input type="password" id="reg-confirm" placeholder="••••••••" autocomplete="new-password" required/>
+    </div>
+    <label>REFERRAL CODE <span class="opt">optional · +15 OXE</span></label>
+    <input type="text" id="reg-ref" placeholder="OXEXXXXX" style="letter-spacing:2px;text-transform:uppercase"/>
+    <button type="submit" class="btn-submit" id="register-submit">CREATE ACCOUNT</button>
+  </form>
+
+  <div class="terms">By continuing you agree to our <a href="#">Terms</a> and <a href="#">Privacy Policy</a></div>
+</div>
+
+<!-- ══ VERIFY CODE PANEL ═══════════════════════════════════════════════════ -->
+<div id="verify-wrap" class="panel" style="display:none">
+  <div class="logo">OXE<span>●</span>BALL</div>
+  <div class="verify-icon">📧</div>
+  <h2 class="verify-title">Check your inbox</h2>
+  <p class="verify-sub">We sent a 6-digit code to <strong id="verify-email-disp">—</strong></p>
+
+  <div id="verify-msg" class="msg" style="display:none"></div>
+
+  <div class="code-row" id="code-row">
+    <input class="code-box" id="c0" maxlength="1" inputmode="numeric" oninput="codeInput(0)" onkeydown="codeKey(event,0)"/>
+    <input class="code-box" id="c1" maxlength="1" inputmode="numeric" oninput="codeInput(1)" onkeydown="codeKey(event,1)"/>
+    <input class="code-box" id="c2" maxlength="1" inputmode="numeric" oninput="codeInput(2)" onkeydown="codeKey(event,2)"/>
+    <input class="code-box" id="c3" maxlength="1" inputmode="numeric" oninput="codeInput(3)" onkeydown="codeKey(event,3)"/>
+    <input class="code-box" id="c4" maxlength="1" inputmode="numeric" oninput="codeInput(4)" onkeydown="codeKey(event,4)"/>
+    <input class="code-box" id="c5" maxlength="1" inputmode="numeric" oninput="codeInput(5)" onkeydown="codeKey(event,5)"/>
+  </div>
+
+  <button class="btn-submit" id="verify-submit" onclick="submitCode()">VERIFY & START PLAYING</button>
+  <div class="resend-row">
+    <span id="resend-timer"></span>
+    <button class="link-btn" id="resend-btn" style="display:none" onclick="resendCode()">Resend code</button>
+  </div>
+  <button class="link-btn back-btn" onclick="showAuth()">← Back</button>
+</div>
+
+<!-- ══ DASHBOARD (shown after login) ═══════════════════════════════════════ -->
+<div id="dashboard" class="panel" style="display:none">
+  <div class="logo">OXE<span>●</span>BALL</div>
+
+  <div class="user-card">
+    <div class="avatar" id="dash-avatar">?</div>
+    <div>
+      <div class="user-name" id="dash-username">—</div>
+      <div class="user-email" id="dash-email">—</div>
+      <div class="method-badge" id="dash-method">—</div>
+    </div>
+  </div>
+
+  <div class="stats-grid">
+    <div class="stat"><div class="sv" id="dash-balance">0</div><div class="sk">OXE BALANCE</div></div>
+    <div class="stat"><div class="sv" id="dash-games">0</div><div class="sk">GAMES PLAYED</div></div>
+  </div>
+
+  <div class="ref-box">
+    <div class="ref-title">🎁 YOUR REFERRAL LINK</div>
+    <div class="ref-link-row">
+      <div class="ref-link-txt" id="ref-link">—</div>
+      <button class="btn-copy" onclick="copyRef()">COPY</button>
+    </div>
+    <div class="ref-stats-row">
+      <span>Referrals: <b id="ref-count">0</b></span>
+      <span>Earned: <b id="ref-earned">0 OXE</b></span>
+    </div>
+  </div>
+
+  <button class="btn-submit" onclick="goToGame()">▶ PLAY OXE BALL</button>
+  <button class="btn-outline" onclick="logout()">Sign Out</button>
+</div>
+
+<script src="auth.js"></script>
+</body>
+</html>

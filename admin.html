@@ -1,0 +1,1090 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<script src="/api.js"></script>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>OXE BALL — Admin Backend</title>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;900&family=Share+Tech+Mono&display=swap" rel="stylesheet"/>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  --gold:#f0c040;--neon:#00d4ff;--purple:#9933ff;
+  --green:#00ff88;--red:#ff3333;
+  --bg:#03030a;--bg2:#07071a;--bg3:#0d0d22;
+  --border:#1a1a44;--border2:#2a2a55;
+}
+html,body{min-height:100%;background:var(--bg);font-family:'Orbitron',sans-serif;color:#ccd;}
+body{padding:0;margin:0;}
+
+/* ── LOGIN GATE ── */
+#login-screen{
+  position:fixed;inset:0;background:#02020a;
+  display:flex;align-items:center;justify-content:center;z-index:9999;
+}
+#login-box{
+  background:var(--bg2);border:1px solid var(--border2);
+  border-radius:16px;padding:32px 28px;width:320px;text-align:center;
+  box-shadow:0 0 60px rgba(100,50,255,.25);
+}
+#login-box h2{font-size:18px;color:var(--neon);letter-spacing:3px;margin-bottom:6px;}
+#login-box p{font-size:10px;color:#3344aa;margin-bottom:22px;letter-spacing:1px;}
+#login-box input{
+  width:100%;background:#040410;border:1px solid var(--border2);
+  color:#aabbcc;font-family:'Share Tech Mono',monospace;
+  font-size:13px;padding:10px 14px;border-radius:8px;outline:none;
+  margin-bottom:10px;letter-spacing:2px;
+}
+#login-box input:focus{border-color:var(--neon);}
+#login-btn{
+  width:100%;background:linear-gradient(135deg,#9933ff,#6600cc);
+  border:none;color:#fff;font-family:'Orbitron',sans-serif;
+  font-size:14px;font-weight:700;padding:11px;border-radius:8px;
+  cursor:pointer;letter-spacing:2px;
+}
+#login-btn:hover{opacity:.9;}
+#login-err{font-size:11px;color:var(--red);margin-top:8px;display:none;}
+
+/* ── MAIN LAYOUT ── */
+#admin{display:none;}
+#topbar{
+  background:var(--bg2);border-bottom:1px solid var(--border);
+  padding:10px 24px;display:flex;justify-content:space-between;align-items:center;
+  position:sticky;top:0;z-index:100;
+}
+#topbar-logo{font-size:18px;font-weight:900;letter-spacing:3px;color:var(--gold);}
+#topbar-logo span{color:var(--neon);}
+#topbar-right{display:flex;gap:12px;align-items:center;}
+.admin-badge{
+  background:#0a001a;border:1px solid var(--purple);
+  color:#cc88ff;font-size:9px;padding:3px 12px;border-radius:20px;letter-spacing:1px;
+}
+#logout-btn{
+  background:transparent;border:1px solid #2a2a55;color:#4455aa;
+  font-family:'Orbitron',sans-serif;font-size:10px;padding:5px 12px;
+  border-radius:6px;cursor:pointer;transition:.15s;
+}
+#logout-btn:hover{border-color:var(--red);color:var(--red);}
+
+/* ── GRID ── */
+.main-grid{
+  display:grid;grid-template-columns:1fr 1fr;
+  gap:16px;padding:20px 24px;max-width:1100px;margin:0 auto;
+}
+@media(max-width:700px){.main-grid{grid-template-columns:1fr;}}
+.full-width{grid-column:1/-1;}
+
+/* ── CARDS ── */
+.card{
+  background:var(--bg2);border:1px solid var(--border);
+  border-radius:12px;padding:18px 20px;
+}
+.card h3{
+  font-size:13px;color:var(--neon);letter-spacing:2px;
+  margin-bottom:14px;padding-bottom:8px;
+  border-bottom:1px solid var(--border);
+  display:flex;align-items:center;gap:8px;
+}
+.card h3 .icon{font-size:16px;}
+
+/* ── STAT GRID ── */
+.stat-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:6px;}
+@media(max-width:700px){.stat-grid{grid-template-columns:repeat(2,1fr);}}
+.stat-box{
+  background:var(--bg3);border:1px solid var(--border);
+  border-radius:8px;padding:12px;text-align:center;
+}
+.stat-box .sv{font-size:20px;font-weight:700;font-family:'Share Tech Mono',monospace;}
+.stat-box .sk{font-size:8px;color:#3344aa;letter-spacing:1px;margin-top:3px;}
+.sv-gold{color:var(--gold);}
+.sv-neon{color:var(--neon);}
+.sv-green{color:var(--green);}
+.sv-red{color:var(--red);}
+
+/* ── PRICE CONTROL ── */
+.price-row{display:flex;gap:10px;align-items:center;margin-bottom:10px;}
+.price-lbl{font-size:11px;color:#4455aa;letter-spacing:1px;flex-shrink:0;}
+.price-input{
+  background:#040410;border:1px solid var(--border2);
+  color:var(--gold);font-family:'Share Tech Mono',monospace;
+  font-size:16px;padding:8px 14px;border-radius:8px;
+  outline:none;width:120px;font-weight:700;
+}
+.price-input:focus{border-color:var(--gold);}
+.btn-save{
+  background:linear-gradient(135deg,var(--gold),#cc8800);
+  border:none;color:#110900;font-family:'Orbitron',sans-serif;
+  font-size:13px;font-weight:700;padding:9px 20px;border-radius:8px;
+  cursor:pointer;letter-spacing:1px;transition:.15s;
+}
+.btn-save:hover{opacity:.9;transform:translateY(-1px);}
+.quick-rates{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px;}
+.qr-btn{
+  background:var(--bg3);border:1px solid var(--border2);
+  color:#5566aa;font-size:11px;padding:5px 12px;border-radius:6px;
+  cursor:pointer;transition:.15s;font-family:'Share Tech Mono',monospace;
+}
+.qr-btn:hover{border-color:var(--gold);color:var(--gold);}
+.rate-info{
+  background:#080814;border:1px solid #1a1a3a;
+  border-radius:8px;padding:10px 14px;margin-top:10px;
+  font-size:11px;color:#4455aa;font-family:'Share Tech Mono',monospace;
+  line-height:1.8;
+}
+.rate-info span{color:#aabbcc;}
+
+/* ── WITHDRAWAL TABLE ── */
+.wd-toolbar{display:flex;gap:8px;align-items:center;margin-bottom:10px;flex-wrap:wrap;}
+.filter-btn{
+  background:var(--bg3);border:1px solid var(--border);
+  color:#4455aa;font-size:10px;padding:4px 12px;border-radius:20px;
+  cursor:pointer;transition:.15s;letter-spacing:.5px;
+}
+.filter-btn.active{background:#0a001a;border-color:var(--purple);color:#cc88ff;}
+.filter-btn:hover{color:#aabbcc;}
+.search-box{
+  background:#040410;border:1px solid var(--border2);
+  color:#aabbcc;font-family:'Share Tech Mono',monospace;
+  font-size:11px;padding:5px 12px;border-radius:7px;outline:none;
+  flex:1;min-width:140px;
+}
+.search-box:focus{border-color:var(--neon);}
+
+table{width:100%;border-collapse:collapse;font-size:11px;}
+th{
+  text-align:left;padding:8px 10px;
+  color:#3344aa;letter-spacing:.5px;font-size:9px;
+  border-bottom:1px solid var(--border);
+}
+td{padding:9px 10px;border-bottom:1px solid rgba(26,26,68,.4);font-family:'Share Tech Mono',monospace;vertical-align:middle;}
+tr:hover td{background:rgba(30,30,80,.2);}
+tr:last-child td{border-bottom:none;}
+
+.status-pill{
+  display:inline-block;font-size:9px;padding:2px 10px;border-radius:20px;
+  font-family:'Orbitron',sans-serif;letter-spacing:.5px;
+}
+.sp-pending{background:#181000;border:1px solid #665500;color:#ffcc33;}
+.sp-approved{background:#041208;border:1px solid #115522;color:#00ff88;}
+.sp-rejected{background:#120404;border:1px solid #551111;color:#ff5533;}
+.sp-paid{background:#040a18;border:1px solid #113366;color:#44aaff;}
+
+.action-row{display:flex;gap:4px;}
+.act-btn{
+  font-size:9px;padding:3px 9px;border-radius:5px;cursor:pointer;
+  border:1px solid;font-family:'Orbitron',sans-serif;letter-spacing:.5px;
+  transition:.12s;
+}
+.act-approve{background:#021008;border-color:#115522;color:#00cc66;}
+.act-approve:hover{background:#041a10;color:#00ff88;}
+.act-reject{background:#120404;border-color:#551111;color:#cc3333;}
+.act-reject:hover{background:#1a0606;color:#ff5533;}
+.act-paid{background:#040816;border-color:#112244;color:#3388cc;}
+.act-paid:hover{background:#060a1e;color:#44aaff;}
+
+/* ── TX LOG ── */
+.tx-log{max-height:300px;overflow-y:auto;}
+.tx-log::-webkit-scrollbar{width:3px;}
+.tx-log::-webkit-scrollbar-thumb{background:#2233aa;border-radius:4px;}
+.log-item{
+  display:flex;justify-content:space-between;align-items:center;
+  padding:7px 10px;border-bottom:1px solid rgba(26,26,68,.4);font-size:11px;
+}
+.log-item:last-child{border-bottom:none;}
+.log-item:hover{background:rgba(30,30,80,.2);}
+.log-type-dep{color:var(--neon);}
+.log-type-wd{color:var(--purple);}
+
+/* ── NOTIFICATIONS ── */
+#notif{position:fixed;top:12px;right:12px;z-index:9999;display:flex;flex-direction:column;gap:8px;max-width:280px;}
+.notif-item{
+  background:#080818;border-left:3px solid var(--neon);
+  padding:9px 14px;border-radius:7px;font-size:11px;color:#aabbcc;
+  box-shadow:0 4px 20px rgba(0,0,0,.8);
+  animation:notifIn .3s ease;
+}
+.notif-item.ok{border-color:var(--green);color:var(--green);}
+.notif-item.err{border-color:var(--red);color:var(--red);}
+.notif-item.warn{border-color:var(--gold);color:#ccaa33;}
+@keyframes notifIn{from{opacity:0;transform:translateX(40px);}to{opacity:1;transform:translateX(0);}}
+
+/* ── EMPTY STATE ── */
+.empty-state{text-align:center;padding:30px;color:#2a3a66;font-size:12px;}
+
+/* ── MODAL ── */
+#modal-wrap{position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:9000;display:none;align-items:center;justify-content:center;padding:20px;}
+#modal-wrap.open{display:flex;}
+#modal-box{background:var(--bg2);border:1px solid var(--border2);border-radius:12px;padding:22px;width:100%;max-width:400px;}
+#modal-box h3{font-size:14px;color:var(--neon);letter-spacing:2px;margin-bottom:14px;}
+.modal-field{margin-bottom:12px;}
+.modal-field label{font-size:9px;color:#3344aa;letter-spacing:1px;display:block;margin-bottom:4px;}
+.modal-field input,.modal-field textarea{
+  width:100%;background:#040410;border:1px solid var(--border2);
+  color:#aabbcc;font-family:'Share Tech Mono',monospace;
+  font-size:12px;padding:8px 12px;border-radius:7px;outline:none;
+}
+.modal-field textarea{height:70px;resize:vertical;}
+.modal-btns{display:flex;gap:8px;justify-content:flex-end;margin-top:14px;}
+.modal-cancel{background:transparent;border:1px solid var(--border2);color:#4455aa;font-family:'Orbitron',sans-serif;font-size:11px;padding:7px 16px;border-radius:7px;cursor:pointer;}
+.modal-confirm{background:linear-gradient(135deg,#9933ff,#6600cc);border:none;color:#fff;font-family:'Orbitron',sans-serif;font-size:11px;font-weight:700;padding:7px 18px;border-radius:7px;cursor:pointer;}
+
+/* ── USERS TABLE ── */
+.user-avatar-sm{
+  width:28px;height:28px;border-radius:50%;
+  display:inline-flex;align-items:center;justify-content:center;
+  font-size:11px;font-weight:700;color:#fff;flex-shrink:0;
+  background:linear-gradient(135deg,#9933ff,#00d4ff);
+}
+.method-badge{
+  display:inline-block;font-size:8px;padding:2px 7px;border-radius:10px;
+  letter-spacing:.5px;font-family:'Orbitron',sans-serif;
+}
+.mb-email {background:#060020;border:1px solid #3322aa;color:#8888ff;}
+.mb-apple {background:#111;border:1px solid #444;color:#eee;}
+.mb-google{background:#06060a;border:1px solid #334;color:#aabbff;}
+.mb-guest {background:#0a0a00;border:1px solid #443300;color:#aaa933;}
+.user-status-on {color:#00ff88;font-size:9px;}
+.user-status-off{color:#334455;font-size:9px;}
+.ban-btn{background:#120404;border:1px solid #441111;color:#cc3333;font-size:9px;padding:2px 8px;border-radius:5px;cursor:pointer;font-family:'Orbitron',sans-serif;}
+.ban-btn:hover{background:#1a0606;color:#ff5533;}
+.unban-btn{background:#041208;border:1px solid #114422;color:#00cc66;font-size:9px;padding:2px 8px;border-radius:5px;cursor:pointer;font-family:'Orbitron',sans-serif;}
+.del-btn{background:#0e0000;border:1px solid #660000;color:#ff2222;font-size:9px;padding:2px 8px;border-radius:5px;cursor:pointer;font-family:'Orbitron',sans-serif;transition:.12s;}
+.del-btn:hover{background:#1a0000;color:#ff4444;border-color:#aa0000;}
+.bal-cell{color:var(--gold);font-family:'Share Tech Mono',monospace;font-weight:700;}
+.uid-cell{color:#2a3a66;font-size:9px;font-family:'Share Tech Mono',monospace;max-width:80px;overflow:hidden;text-overflow:ellipsis;}
+
+</style>
+</head>
+<body>
+
+<!-- LOGIN GATE -->
+<div id="login-screen">
+  <div id="login-box">
+    <h2>⬡ OXE ADMIN</h2>
+    <p>BACKEND CONTROL PANEL</p>
+    <input type="password" id="pw-input" placeholder="Enter admin password" onkeydown="if(event.key==='Enter')doLogin()"/>
+    <button id="login-btn" onclick="doLogin()">ACCESS PANEL</button>
+    <div id="login-err">⚠ Incorrect password</div>
+  </div>
+</div>
+
+<!-- ADMIN PANEL -->
+<div id="admin">
+  <div id="topbar">
+    <div id="topbar-logo">OXE<span>●</span>BALL <span style="font-size:11px;color:#3344aa;font-weight:400;">ADMIN</span></div>
+    <div id="topbar-right">
+      <div class="admin-badge">ADMIN ACCESS</div>
+      <div id="clock" style="font-family:'Share Tech Mono',monospace;font-size:11px;color:#3344aa;"></div>
+      <button id="logout-btn" onclick="doLogout()">LOGOUT</button>
+    </div>
+  </div>
+
+  <div class="main-grid">
+
+    <!-- STATS -->
+    <div class="card full-width">
+      <h3><span class="icon">📊</span> PLATFORM OVERVIEW</h3>
+      <div class="stat-grid" style="grid-template-columns:repeat(6,1fr);">
+        <div class="stat-box"><div class="sv sv-neon" id="st-oxe-rate">20</div><div class="sk">OXE / USDT</div></div>
+        <div class="stat-box"><div class="sv sv-gold" id="st-total-oxe">0</div><div class="sk">OXE ISSUED</div></div>
+        <div class="stat-box"><div class="sv sv-green" id="st-deposits">0</div><div class="sk">DEPOSITS ($)</div></div>
+        <div class="stat-box"><div class="sv sv-red" id="st-pending-wd">0</div><div class="sk">PENDING WD</div></div>
+        <div class="stat-box"><div class="sv" id="st-total-users" style="color:#cc44ff;">0</div><div class="sk">TOTAL USERS</div></div>
+        <div class="stat-box"><div class="sv" id="st-active-users" style="color:#00d4ff;">0</div><div class="sk">ACTIVE TODAY</div></div>
+        <div class="stat-box"><div class="sv" id="st-total-refs" style="color:#ff88ff;">0</div><div class="sk">REFERRALS</div></div>
+        <div class="stat-box"><div class="sv" id="st-ref-oxe" style="color:#cc88ff;">0</div><div class="sk">REF OXE PAID</div></div>
+      </div>
+    </div>
+
+    <!-- OXE PRICE CONTROL -->
+    <div class="card">
+      <h3><span class="icon">💱</span> OXE PRICE CONTROL</h3>
+      <div class="price-row">
+        <span class="price-lbl">1 USDT =</span>
+        <input type="number" class="price-input" id="rate-input" value="20" min="1" step="1"/>
+        <span class="price-lbl">OXE</span>
+        <button class="btn-save" onclick="saveRate()">SAVE</button>
+      </div>
+      <div class="quick-rates">
+        <span style="font-size:9px;color:#3344aa;align-self:center;margin-right:4px;">QUICK SET:</span>
+        <button class="qr-btn" onclick="setRate(5)">5x</button>
+        <button class="qr-btn" onclick="setRate(10)">10x</button>
+        <button class="qr-btn" onclick="setRate(20)">20x</button>
+        <button class="qr-btn" onclick="setRate(50)">50x</button>
+        <button class="qr-btn" onclick="setRate(100)">100x</button>
+      </div>
+      <div class="rate-info" id="rate-preview">
+        <span>Deposit $5 USDT</span> → <span id="p5">100 OXE</span><br/>
+        <span>Deposit $10 USDT</span> → <span id="p10">200 OXE</span><br/>
+        <span>Deposit $50 USDT</span> → <span id="p50">1,000 OXE</span><br/>
+        <span>Deposit $100 USDT</span> → <span id="p100">2,000 OXE</span><br/>
+        <span>Withdraw 200 OXE</span> → <span id="pw200">$10.00 USDT</span>
+      </div>
+    </div>
+
+    <!-- GAME CONFIG -->
+    <div class="card">
+      <h3><span class="icon">⚙️</span> GAME CONFIG</h3>
+      <div style="display:flex;flex-direction:column;gap:10px;">
+        <div class="price-row">
+          <span class="price-lbl" style="width:100px;">MIN BET (OXE)</span>
+          <input type="number" class="price-input" id="min-bet" value="20" style="width:90px;" oninput="validateBetRange()"/>
+        </div>
+        <div class="price-row">
+          <span class="price-lbl" style="width:100px;">MAX BET (OXE)</span>
+          <input type="number" class="price-input" id="max-bet" value="2000" style="width:90px;" oninput="validateBetRange()"/>
+        </div>
+        <div class="price-row">
+          <span class="price-lbl" style="width:100px;">WIN CHANCE</span>
+          <input type="number" class="price-input" id="win-pct" value="10" min="1" max="99" style="width:90px;"/>
+          <span class="price-lbl">%</span>
+        </div>
+        <div class="price-row">
+          <span class="price-lbl" style="width:100px;">TRIAL OXE</span>
+          <input type="number" class="price-input" id="trial-oxe" value="200" style="width:90px;"/>
+        </div>
+        <button class="btn-save" onclick="saveConfig()" style="width:100%;margin-top:4px;">SAVE CONFIG</button>
+      </div>
+    </div>
+
+    <!-- WITHDRAWAL REQUESTS -->
+    <div class="card full-width">
+      <h3><span class="icon">💸</span> WITHDRAWAL REQUESTS</h3>
+      <div class="wd-toolbar">
+        <button class="filter-btn active" onclick="filterWd('all',this)">All</button>
+        <button class="filter-btn" onclick="filterWd('Pending',this)">Pending</button>
+        <button class="filter-btn" onclick="filterWd('Approved',this)">Approved</button>
+        <button class="filter-btn" onclick="filterWd('Paid',this)">Paid</button>
+        <button class="filter-btn" onclick="filterWd('Rejected',this)">Rejected</button>
+        <input class="search-box" id="wd-search" placeholder="Search address / ID..." oninput="renderWdTable()"/>
+        <button class="btn-save" style="padding:6px 14px;font-size:11px;" onclick="exportWd()">↓ EXPORT</button>
+      </div>
+      <div style="overflow-x:auto;">
+        <table>
+          <thead>
+            <tr>
+              <th>#ID</th><th>TIME</th><th>ADDRESS</th>
+              <th>OXE</th><th>USDT</th><th>STATUS</th><th>ACTIONS</th><th>NOTE</th>
+            </tr>
+          </thead>
+          <tbody id="wd-tbody"></tbody>
+        </table>
+      </div>
+      <div id="wd-empty" class="empty-state">No withdrawal requests yet</div>
+    </div>
+
+
+
+    <!-- REFERRAL TRACKING -->
+    <div class="card full-width">
+      <h3><span class="icon">🎁</span> REFERRAL TRACKING</h3>
+      <div class="wd-toolbar">
+        <input class="search-box" id="ref-search" placeholder="Search by code or UID..." oninput="renderRefTable()" style="max-width:250px;"/>
+        <button class="btn-save" style="padding:6px 14px;font-size:11px;" onclick="exportRefs()">↓ EXPORT</button>
+      </div>
+      <div style="overflow-x:auto;">
+        <table>
+          <thead>
+            <tr>
+              <th>CODE</th><th>REFERRER UID</th><th>REFERRER</th>
+              <th>REFERRALS</th><th>OXE EARNED</th><th>LAST REFERRAL</th>
+            </tr>
+          </thead>
+          <tbody id="ref-tbody"></tbody>
+        </table>
+      </div>
+      <div id="ref-empty" class="empty-state">No referrals yet</div>
+    </div>
+
+    <!-- USERS TABLE -->
+    <div class="card full-width">
+      <h3><span class="icon">👥</span> REGISTERED USERS</h3>
+      <div class="wd-toolbar">
+        <button class="filter-btn active" onclick="filterUsers('all',this)">All</button>
+        <button class="filter-btn" onclick="filterUsers('email',this)">Email</button>
+        <button class="filter-btn" onclick="filterUsers('apple',this)">Apple</button>
+        <button class="filter-btn" onclick="filterUsers('google',this)">Google</button>
+        <button class="filter-btn" onclick="filterUsers('guest',this)">Guest</button>
+        <button class="filter-btn" onclick="filterUsers('banned',this)" style="color:#ff5533;">Banned</button>
+        <input class="search-box" id="user-search" placeholder="Search email / username / UID..." oninput="renderUsersTable()"/>
+        <button class="btn-save" style="padding:6px 14px;font-size:11px;" onclick="exportUsers()">↓ EXPORT</button>
+      </div>
+      <div style="overflow-x:auto;">
+        <table>
+          <thead>
+            <tr>
+              <th>USER</th><th>UID</th><th>EMAIL</th><th>METHOD</th><th>REF BY</th><th>ACTION</th>
+              <th>BALANCE (OXE)</th><th>REGISTERED</th><th>LAST LOGIN</th>
+              <th>GAMES</th><th>DEPOSITS</th><th>STATUS</th><th>ACTION</th>
+            </tr>
+          </thead>
+          <tbody id="users-tbody"></tbody>
+        </table>
+      </div>
+      <div id="users-empty" class="empty-state">No registered users yet</div>
+    </div>
+
+    <!-- DEPOSIT LOG -->
+    <div class="card full-width">
+      <h3><span class="icon">💰</span> DEPOSIT LOG</h3>
+      <div class="tx-log" id="dep-log">
+        <div class="empty-state">No deposits yet</div>
+      </div>
+    </div>
+
+    <!-- DELETED USERS LOG -->
+    <div class="card full-width">
+      <h3><span class="icon">🗑</span> DELETED USERS LOG</h3>
+      <div class="tx-log" id="del-log">
+        <div class="empty-state">No deleted users</div>
+      </div>
+    </div>
+
+  </div><!-- /grid -->
+</div><!-- /admin -->
+
+<!-- CONFIRMATION MODAL -->
+<div id="modal-wrap">
+  <div id="modal-box">
+    <h3 id="modal-title">CONFIRM ACTION</h3>
+    <div class="modal-field">
+      <label>NOTE / TX HASH (optional)</label>
+      <input type="text" id="modal-note" placeholder="Add a note or outgoing tx hash..."/>
+    </div>
+    <div class="modal-btns">
+      <button class="modal-cancel" onclick="closeModal()">CANCEL</button>
+      <button class="modal-confirm" id="modal-confirm-btn">CONFIRM</button>
+    </div>
+  </div>
+</div>
+
+<div id="notif"></div>
+
+<script>
+// ═══════════════════════════════════════════════
+//  AUTH
+// ═══════════════════════════════════════════════
+let loggedIn = false;
+
+function doLogin(){
+  let pw = document.getElementById('pw-input').value;
+  let btn = document.getElementById('login-btn');
+  btn.textContent='CONNECTING...';btn.disabled=true;
+  API.adminLogin(pw).then(r=>{
+    btn.textContent='ACCESS PANEL';btn.disabled=false;
+    if(r.error){
+      document.getElementById('login-err').style.display='block';
+      document.getElementById('pw-input').value='';
+      document.getElementById('pw-input').focus();
+      return;
+    }
+    API.setToken(r.token);
+    loggedIn=true;
+    document.getElementById('login-screen').style.display='none';
+    document.getElementById('admin').style.display='block';
+    initAdmin();
+  }).catch(()=>{
+    btn.textContent='ACCESS PANEL';btn.disabled=false;
+    document.getElementById('login-err').textContent='⚠ Server connection failed';
+    document.getElementById('login-err').style.display='block';
+  });
+}
+function doLogout(){
+  API.clearToken();
+  loggedIn=false;
+  document.getElementById('login-screen').style.display='flex';
+  document.getElementById('admin').style.display='none';
+}
+
+// ═══════════════════════════════════════════════
+//  DATA STORE — backed by server API
+// ═══════════════════════════════════════════════
+let _adminUsers={},_adminRefs={},_adminDeleted=[];
+let DB = { rate:20, totalOxe:0, totalDeposits:0, withdrawals:[], deposits:[],
+           config:{minBet:10,maxBet:100000,winPct:10,trialOxe:200} };
+
+function saveData(d){ DB = d; } // kept for compatibility, data now on server
+
+// ═══════════════════════════════════════════════
+//  INIT
+// ═══════════════════════════════════════════════
+function initAdmin(){
+  startClock();
+  // Load config from server
+  API.adminConfig().then(cfg=>{
+    DB.config = cfg;
+    DB.rate = cfg.rate;
+    document.getElementById('rate-input').value = cfg.rate;
+    document.getElementById('min-bet').value = cfg.minBet;
+    document.getElementById('max-bet').value = cfg.maxBet;
+    document.getElementById('win-pct').value = cfg.winPct;
+    document.getElementById('trial-oxe').value = cfg.trialOxe;
+    updateRatePreview();
+  });
+  // Load all data
+  loadAllAdminData();
+}
+
+function loadAllAdminData(){
+  Promise.all([
+    API.adminWithdrawals(),
+    API.adminDeposits(),
+    API.adminUsers(),
+    API.adminReferrals(),
+    API.adminDeleted()
+  ]).then(([wds, deps, users, refs, deleted])=>{
+    DB.withdrawals = Array.isArray(wds)?wds:[];
+    DB.deposits    = Array.isArray(deps)?deps:[];
+    // compute totals
+    DB.totalDeposits = DB.deposits.reduce((s,d)=>s+parseFloat(d.usdt||0),0);
+    DB.totalOxe      = DB.deposits.reduce((s,d)=>s+(d.oxe||0),0);
+    _adminUsers  = users||{};
+    _adminRefs   = refs||{};
+    _adminDeleted= Array.isArray(deleted)?deleted:[];
+    updateStats();
+    renderWdTable();
+    renderDepLog();
+    renderUsersTable();
+    renderRefTable();
+    renderDelLog();
+  }).catch(e=>notify('⚠ Failed to load data: '+e.message,'err'));
+}
+
+function seedDemoData(){} // replaced by server
+
+// ═══════════════════════════════════════════════
+//  CLOCK
+// ═══════════════════════════════════════════════
+function startClock(){
+  function tick(){
+    document.getElementById('clock').textContent = new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+  }
+  tick(); setInterval(tick,1000);
+}
+
+// ═══════════════════════════════════════════════
+//  RATE + CONFIG
+// ═══════════════════════════════════════════════
+function updateRatePreview(){
+  let r = parseInt(document.getElementById('rate-input').value)||20;
+  document.getElementById('p5').textContent   = (5*r).toLocaleString()+' OXE';
+  document.getElementById('p10').textContent  = (10*r).toLocaleString()+' OXE';
+  document.getElementById('p50').textContent  = (50*r).toLocaleString()+' OXE';
+  document.getElementById('p100').textContent = (100*r).toLocaleString()+' OXE';
+  document.getElementById('pw200').textContent= '$'+(200/r).toFixed(2)+' USDT';
+}
+
+document.addEventListener('input',e=>{
+  if(e.target.id==='rate-input') updateRatePreview();
+});
+
+function setRate(r){
+  document.getElementById('rate-input').value = r;
+  updateRatePreview();
+}
+
+function saveRate(){
+  let r = parseInt(document.getElementById('rate-input').value);
+  if(!r||r<1){ notify('Invalid rate','err'); return; }
+  DB.rate = r;
+  API.adminSaveConfig({rate:r}).then(()=>updateStats());
+  // In production: POST /api/admin/set-rate {rate: r}
+  notify(`✓ OXE rate updated: 1 USDT = ${r} OXE`,'ok');
+  // Show copy instructions for game file
+  setTimeout(()=>notify('📋 Update OXE_RATE in game file to '+r,'warn'),800);
+}
+
+function validateBetRange(){
+  let min=parseInt(document.getElementById('min-bet').value)||0;
+  let max=parseInt(document.getElementById('max-bet').value)||0;
+  let hint=document.getElementById('bet-range-hint');
+  if(min>0&&max>0){
+    hint.style.display='block';
+    if(max<min){
+      hint.style.color='var(--red)';
+      hint.textContent='⚠ Max must be greater than min';
+    } else {
+      hint.style.color='var(--green)';
+      hint.textContent=`✓ Range: ${min.toLocaleString()} – ${max.toLocaleString()} OXE`;
+    }
+  }
+}
+
+function saveConfig(){
+  let minBet = parseInt(document.getElementById('min-bet').value)||10;
+  let maxBet = parseInt(document.getElementById('max-bet').value)||100000;
+  let winPct = parseInt(document.getElementById('win-pct').value)||10;
+  let trialOxe = parseInt(document.getElementById('trial-oxe').value)||200;
+
+  if(minBet<1){ notify('Min bet must be at least 1 OXE','err'); return; }
+  if(maxBet<minBet){ notify('Max bet must be greater than min bet','err'); return; }
+  if(winPct<1||winPct>99){ notify('Win % must be between 1–99','err'); return; }
+
+  DB.config = { minBet, maxBet, winPct, trialOxe };
+  API.adminSaveConfig({ minBet, maxBet, winPct, trialOxe });
+
+  // Flash visual confirmation on the input fields
+  ['min-bet','max-bet','win-pct','trial-oxe'].forEach(id=>{
+    let el=document.getElementById(id);
+    el.style.borderColor='var(--green)';
+    setTimeout(()=>el.style.borderColor='',1200);
+  });
+
+  notify(`✓ Config saved — Bet: ${minBet.toLocaleString()}–${maxBet.toLocaleString()} OXE | Win: ${winPct}%`,'ok');
+  setTimeout(()=>notify('🎮 Game will apply new limits on next load','warn'),600);
+}
+
+// ═══════════════════════════════════════════════
+//  STATS
+// ═══════════════════════════════════════════════
+function updateStats(){
+  let pending = DB.withdrawals.filter(w=>w.status==='Pending').length;
+  document.getElementById('st-oxe-rate').textContent   = DB.rate||20;
+  document.getElementById('st-total-oxe').textContent  = (DB.totalOxe||0).toLocaleString();
+  document.getElementById('st-deposits').textContent   = '$'+(DB.totalDeposits||0).toFixed(2);
+  document.getElementById('st-pending-wd').textContent = pending;
+  if(pending>0) document.getElementById('st-pending-wd').style.color='var(--red)';
+  let userArr = Object.values(_adminUsers||{});
+  let today = new Date().toDateString();
+  let active = userArr.filter(u=>u.lastLogin && new Date(u.lastLogin).toDateString()===today).length;
+  document.getElementById('st-total-users').textContent = userArr.length;
+  document.getElementById('st-active-users').textContent = active;
+}
+
+// ═══════════════════════════════════════════════
+//  WITHDRAWAL TABLE
+// ═══════════════════════════════════════════════
+let wdFilter = 'all';
+
+function filterWd(f, btn){
+  wdFilter = f;
+  document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  renderWdTable();
+}
+
+function renderWdTable(){
+  let tbody = document.getElementById('wd-tbody');
+  let empty = document.getElementById('wd-empty');
+  let search = document.getElementById('wd-search').value.toLowerCase();
+
+  let rows = DB.withdrawals.filter(w=>{
+    let matchFilter = wdFilter==='all' || w.status===wdFilter;
+    let matchSearch = !search || w.addr.toLowerCase().includes(search) || w.id.toLowerCase().includes(search);
+    return matchFilter && matchSearch;
+  });
+
+  if(!rows.length){
+    tbody.innerHTML='';
+    empty.style.display='block';
+    return;
+  }
+  empty.style.display='none';
+
+  tbody.innerHTML = rows.map(w=>`
+    <tr>
+      <td style="color:#5566aa">${w.id}</td>
+      <td style="color:#3344aa;font-size:10px;">${w.time}</td>
+      <td style="color:#aabbcc;max-width:140px;overflow:hidden;text-overflow:ellipsis;">${w.addr}</td>
+      <td style="color:var(--purple);font-weight:700;">${w.oxe.toLocaleString()}</td>
+      <td style="color:var(--gold);">$${w.usdt}</td>
+      <td><span class="status-pill sp-${w.status.toLowerCase()}">${w.status}</span></td>
+      <td>
+        <div class="action-row">
+          ${w.status==='Pending'?`
+            <button class="act-btn act-approve" onclick="wdAction('${w.id}','Approved')">✓ Approve</button>
+            <button class="act-btn act-reject" onclick="wdAction('${w.id}','Rejected')">✕ Reject</button>
+          `:''}
+          ${w.status==='Approved'?`
+            <button class="act-btn act-paid" onclick="wdAction('${w.id}','Paid')">⬡ Mark Paid</button>
+          `:''}
+          ${w.status==='Paid'||w.status==='Rejected'?`<span style="color:#2a3a66;font-size:9px;">Done</span>`:''}
+        </div>
+      </td>
+      <td style="color:#3a4a66;font-size:10px;max-width:120px;">${w.note||'—'}</td>
+    </tr>
+  `).join('');
+}
+
+let pendingAction = null;
+
+function wdAction(id, newStatus){
+  pendingAction = {id, newStatus};
+  document.getElementById('modal-title').textContent =
+    newStatus==='Approved' ? '✓ APPROVE WITHDRAWAL' :
+    newStatus==='Rejected' ? '✕ REJECT WITHDRAWAL' :
+    '⬡ MARK AS PAID';
+  document.getElementById('modal-note').value = '';
+  document.getElementById('modal-wrap').classList.add('open');
+}
+
+function closeModal(){ document.getElementById('modal-wrap').classList.remove('open'); pendingAction=null; }
+
+document.getElementById('modal-confirm-btn').onclick = function(){
+  if(!pendingAction) return;
+  let {id, newStatus} = pendingAction;
+  let note = document.getElementById('modal-note').value.trim();
+  let idx = DB.withdrawals.findIndex(w=>w.id===id);
+  if(idx>=0){
+    DB.withdrawals[idx].status = newStatus;
+    DB.withdrawals[idx].note = note;
+  }
+  saveData(DB);
+  updateStats();
+  renderWdTable();
+  closeModal();
+  let colors = {Approved:'ok',Rejected:'err',Paid:'ok'};
+  notify(`${newStatus}: ${id}`, colors[newStatus]||'info');
+};
+
+function exportWd(){
+  let rows = DB.withdrawals;
+  let csv = 'ID,Time,Address,OXE,USDT,Status,Note\n' +
+    rows.map(w=>`${w.id},${w.time},${w.addr},${w.oxe},${w.usdt},${w.status},"${w.note}"`).join('\n');
+  let blob = new Blob([csv], {type:'text/csv'});
+  let a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'oxeball-withdrawals-'+new Date().toISOString().slice(0,10)+'.csv';
+  a.click();
+  notify('✓ CSV exported','ok');
+}
+
+// ═══════════════════════════════════════════════
+//  DEPOSIT LOG
+// ═══════════════════════════════════════════════
+function renderDelLog(){
+  let log = document.getElementById('del-log');
+  let deleted = _adminDeleted||[];
+  if(!deleted.length){
+    log.innerHTML='<div class="empty-state">No deleted users</div>';
+    return;
+  }
+  log.innerHTML = [...deleted].reverse().map(d=>`
+    <div class="log-item">
+      <div>
+        <span class="log-type-wd">✕ DELETED</span>
+        <span style="color:#3344aa;font-size:10px;margin-left:8px;">${new Date(d.deletedAt).toLocaleString([],{month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'})}</span>
+      </div>
+      <div style="color:#aa3333;font-size:10px;font-family:'Share Tech Mono',monospace;">${d.name||'—'}</div>
+      <div style="color:#441111;font-size:9px;font-family:'Share Tech Mono',monospace;">${d.uid.slice(0,16)}...</div>
+    </div>
+  `).join('');
+}
+
+function renderDepLog(){
+  let log = document.getElementById('dep-log');
+  let deps = DB.deposits||[];
+  if(!deps.length){
+    log.innerHTML='<div class="empty-state">No deposits yet</div>';
+    return;
+  }
+  log.innerHTML = deps.map(d=>`
+    <div class="log-item">
+      <div>
+        <span class="log-type-dep">↓ DEPOSIT</span>
+        <span style="color:#3344aa;font-size:10px;margin-left:8px;">${d.time}</span>
+      </div>
+      <div style="text-align:center;">
+        <span style="color:#aabbcc;font-size:10px;">${d.addr.slice(0,14)}...</span>
+      </div>
+      <div style="text-align:right;">
+        <div style="color:var(--neon);font-size:12px;font-weight:700;">+${d.oxe.toLocaleString()} OXE</div>
+        <div style="color:#3344aa;font-size:9px;">$${d.usdt} USDT</div>
+      </div>
+    </div>
+  `).join('');
+}
+
+// ═══════════════════════════════════════════════
+//  MANUAL WITHDRAWAL ADD (for testing)
+// ═══════════════════════════════════════════════
+function addTestWithdrawal(){
+  let id = 'WD-'+String(DB.withdrawals.length+1).padStart(3,'0');
+  let now = new Date().toLocaleString([],{year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'});
+  DB.withdrawals.unshift({
+    id, time:now,
+    addr:'0x'+Math.random().toString(16).slice(2,42).toUpperCase(),
+    oxe: [200,400,500,1000][Math.floor(Math.random()*4)],
+    usdt: ['10.00','20.00','25.00','50.00'][Math.floor(Math.random()*4)],
+    status:'Pending', note:''
+  });
+  saveData(DB);
+  updateStats();
+  renderWdTable();
+  notify('Test withdrawal request added','warn');
+}
+
+// ═══════════════════════════════════════════════
+//  NOTIFICATIONS
+// ═══════════════════════════════════════════════
+function notify(msg, type='info'){
+  let wrap = document.getElementById('notif');
+  let d = document.createElement('div');
+  d.className = 'notif-item '+(type==='ok'?'ok':type==='err'?'err':type==='warn'?'warn':'');
+  d.textContent = msg;
+  wrap.appendChild(d);
+  setTimeout(()=>{d.style.opacity='0';d.style.transition='opacity .4s';setTimeout(()=>d.remove(),400);},3500);
+}
+
+
+
+// ═══════════════════════════════════════════════
+//  REFERRAL TRACKING
+// ═══════════════════════════════════════════════
+function loadRefData(){ return _adminRefs||{}; }
+
+function renderRefTable(){
+  let refs = _adminRefs||{};
+  let tbody = document.getElementById('ref-tbody');
+  let empty = document.getElementById('ref-empty');
+  let search = (document.getElementById('ref-search').value||'').toLowerCase();
+  let users = loadUsers();
+
+  let rows = Object.entries(refs).filter(([code,data])=>{
+    if(!search) return true;
+    return code.toLowerCase().includes(search) || data.uid.toLowerCase().includes(search);
+  }).map(([code,data])=>({code,...data}));
+
+  rows.sort((a,b)=>b.earned-a.earned);
+
+  if(!rows.length){ tbody.innerHTML=''; empty.style.display='block'; return; }
+  empty.style.display='none';
+
+  // Get last referral time from admin DB
+  let adminRefs = [];
+
+  tbody.innerHTML = rows.map(r=>{
+    let referrerUser = Object.values(users).find(u=>u.uid===r.uid);
+    let name = referrerUser ? (referrerUser.username||referrerUser.email||r.uid) : r.uid.slice(0,14)+'...';
+    let lastRef = adminRefs.filter(e=>e.code===r.code).sort((a,b)=>new Date(b.time)-new Date(a.time))[0];
+    let lastTime = lastRef ? new Date(lastRef.time).toLocaleString([],{month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'}) : '—';
+    return `<tr>
+      <td style="color:#cc44ff;font-family:'Share Tech Mono',monospace;letter-spacing:2px;font-weight:700;">${r.code}</td>
+      <td class="uid-cell" title="${r.uid}">${r.uid.slice(0,14)}...</td>
+      <td style="color:#aabbcc;">${name}</td>
+      <td style="color:#00ff88;font-weight:700;">${r.count}</td>
+      <td style="color:var(--gold);font-weight:700;">${r.earned} OXE</td>
+      <td style="color:#3a4a66;font-size:9px;">${lastTime}</td>
+    </tr>`;
+  }).join('');
+
+  // Update stats
+  let totalRefs = rows.reduce((s,r)=>s+r.count,0);
+  let totalOxe  = rows.reduce((s,r)=>s+r.earned,0);
+  document.getElementById('st-total-refs').textContent = totalRefs;
+  document.getElementById('st-ref-oxe').textContent    = totalOxe+' OXE';
+}
+
+function exportRefs(){
+  let refs = _adminRefs||{};
+  let csv = 'Code,ReferrerUID,Referrals,OXE_Earned\n' +
+    Object.entries(refs).map(([code,d])=>`${code},${d.uid},${d.count},${d.earned}`).join('\n');
+  let blob=new Blob([csv],{type:'text/csv'});
+  let a=document.createElement('a');a.href=URL.createObjectURL(blob);
+  a.download='oxeball-referrals-'+new Date().toISOString().slice(0,10)+'.csv';a.click();
+  notify('✓ Referrals CSV exported','ok');
+}
+
+// ═══════════════════════════════════════════════
+//  USERS
+// ═══════════════════════════════════════════════
+function loadUsers(){ return _adminUsers||{}; }
+
+function saveUsers(users){ _adminUsers=users; }
+
+let usersFilter = 'all';
+
+function filterUsers(f, btn){
+  usersFilter = f;
+  document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  renderUsersTable();
+  renderRefTable();
+  renderDelLog();
+}
+
+function renderUsersTable(){
+  let users = loadUsers();
+  let tbody = document.getElementById('users-tbody');
+  let empty = document.getElementById('users-empty');
+  let search = (document.getElementById('user-search').value||'').toLowerCase();
+
+  let rows = Object.values(users).filter(u=>{
+    if(usersFilter==='banned' && !u.banned) return false;
+    if(usersFilter!=='all' && usersFilter!=='banned' && u.method!==usersFilter) return false;
+    if(search){
+      let hay = (u.email+u.username+u.uid+u.method).toLowerCase();
+      if(!hay.includes(search)) return false;
+    }
+    return true;
+  });
+
+  // Sort newest first
+  rows.sort((a,b)=>new Date(b.registeredAt)-new Date(a.registeredAt));
+
+  if(!rows.length){ tbody.innerHTML=''; empty.style.display='block'; return; }
+  empty.style.display='none';
+
+  tbody.innerHTML = rows.map(u=>{
+    let init = (u.username||u.email||'G').slice(0,2).toUpperCase();
+    let regDate = u.registeredAt ? new Date(u.registeredAt).toLocaleString([],{year:'2-digit',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'}) : '—';
+    let lastDate = u.lastLogin  ? new Date(u.lastLogin).toLocaleString([],{year:'2-digit',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'}) : '—';
+    let statusDot = u.banned
+      ? '<span class="user-status-off">⊘ BANNED</span>'
+      : '<span class="user-status-on">● ACTIVE</span>';
+    let banBtn = u.banned
+      ? `<button class="unban-btn" onclick="toggleBan('${u.uid}',false)">UNBAN</button>`
+      : `<button class="ban-btn"   onclick="toggleBan('${u.uid}',true)">BAN</button>`;
+    let delBtn = `<button class="del-btn" onclick="confirmDelete('${u.uid}','${(u.username||u.email||'').replace(/'/g,'')}')" title="Delete user permanently">✕ DELETE</button>`;
+    return `<tr style="${u.banned?'opacity:.5':''}">
+      <td><div style="display:flex;align-items:center;gap:8px;">
+        <div class="user-avatar-sm">${init}</div>
+        <div style="font-size:12px;color:#aabbcc;">${u.username||'—'}</div>
+      </div></td>
+      <td class="uid-cell" title="${u.uid}">${u.uid.slice(0,12)}...</td>
+      <td style="color:#5566aa;font-size:10px;max-width:130px;overflow:hidden;text-overflow:ellipsis;">${u.email||'—'}</td>
+      <td><span class="method-badge mb-${u.method||'email'}">${(u.method||'email').toUpperCase()}</span></td>
+      <td style="color:#4433aa;font-size:9px;font-family:'Share Tech Mono',monospace;">${u.referredBy||'—'}</td>
+      <td class="bal-cell">${(u.balance||0).toLocaleString()}</td>
+      <td style="color:#3a4a66;font-size:9px;">${regDate}</td>
+      <td style="color:#3a4a66;font-size:9px;">${lastDate}</td>
+      <td style="color:#5566aa;">${u.gamesPlayed||0}</td>
+      <td style="color:#5566aa;">$${(u.totalDeposits||0).toFixed(2)}</td>
+      <td>${statusDot}</td>
+      <td><div style="display:flex;gap:4px;flex-wrap:wrap;">${banBtn}${delBtn}</div></td>
+    </tr>`;
+  }).join('');
+
+  // Update stats
+  let total = rows.length;
+  let today = new Date().toDateString();
+  let active = Object.values(users).filter(u=>u.lastLogin && new Date(u.lastLogin).toDateString()===today).length;
+  document.getElementById('st-total-users').textContent = Object.keys(users).length;
+  document.getElementById('st-active-users').textContent = active;
+}
+
+function toggleBan(uid, ban){
+  let users = loadUsers();
+  let user = Object.values(users).find(u=>u.uid===uid);
+  if(user){
+    user.banned = ban;
+    if(ban) user.bannedAt = new Date().toISOString();
+    else delete user.bannedAt;
+    saveUsers(users);
+    renderUsersTable();
+  renderRefTable();
+  renderDelLog();
+    notify((ban?'⊘ User banned: ':'✓ User unbanned: ')+uid.slice(0,14), ban?'err':'ok');
+  }
+}
+
+function confirmDelete(uid, name){
+  // Show delete confirmation in modal
+  pendingAction = null; // reset withdrawal modal state
+  let wrap = document.getElementById('modal-wrap');
+  let title = document.getElementById('modal-title');
+  let note = document.getElementById('modal-note');
+  let btn = document.getElementById('modal-confirm-btn');
+  title.textContent = '✕ DELETE USER — ' + name;
+  title.style.color = '#ff3333';
+  note.placeholder = 'Type DELETE to confirm...';
+  note.value = '';
+  note.style.borderColor = '';
+  wrap.classList.add('open');
+  // Override confirm button for delete
+  btn.onclick = function(){
+    if(note.value.trim().toUpperCase() !== 'DELETE'){
+      note.style.borderColor = '#ff3333';
+      note.placeholder = 'You must type DELETE to confirm';
+      return;
+    }
+    deleteUser(uid, name);
+    closeModal();
+    title.style.color = '';
+    btn.onclick = null;
+    // Restore original modal confirm handler
+    document.getElementById('modal-confirm-btn').onclick = function(){
+      if(!pendingAction) return;
+      let {id, newStatus} = pendingAction;
+      let noteVal = document.getElementById('modal-note').value.trim();
+      let idx = DB.withdrawals.findIndex(w=>w.id===id);
+      if(idx>=0){ DB.withdrawals[idx].status=newStatus; DB.withdrawals[idx].note=noteVal; }
+      saveData(DB); updateStats(); renderWdTable(); closeModal();
+      let colors={Approved:'ok',Rejected:'err',Paid:'ok'};
+      notify(newStatus+': '+id, colors[newStatus]||'info');
+    };
+  };
+}
+
+function deleteUser(uid, name){
+  // 1. Remove from admin users store
+  let users = loadUsers();
+  let email = null;
+  for(let key of Object.keys(users)){
+    if(users[key].uid === uid){ email=key; delete users[key]; break; }
+  }
+  saveUsers(users);
+
+  // 2. Remove from game users store (by email)
+  if(email){
+    let gameUsers = JSON.parse(localStorage.getItem('oxeball_users')||'{}');
+    delete gameUsers[email];
+    localStorage.setItem('oxeball_users', JSON.stringify(gameUsers));
+  }
+
+  // 3. Remove from auth store if it's the logged-in user (edge case)
+  try{
+    let auth = JSON.parse(localStorage.getItem('oxeball_auth_v1')||'null');
+    if(auth && auth.uid === uid) localStorage.removeItem('oxeball_auth_v1');
+  }catch(e){}
+
+  // 4. Remove their referral code entry
+  let refs = JSON.parse(localStorage.getItem('oxeball_refs_v1')||'{}');
+  for(let code of Object.keys(refs)){
+    if(refs[code].uid === uid){ delete refs[code]; break; }
+  }
+  localStorage.setItem('oxeball_refs_v1', JSON.stringify(refs));
+
+  // 5. Log deletion to admin DB
+  try{
+    let adminDb = JSON.parse(localStorage.getItem('oxeball_admin_v1')||'{}');
+    if(!adminDb.deletedUsers) adminDb.deletedUsers=[];
+    adminDb.deletedUsers.push({ uid, name, deletedAt:new Date().toISOString(), deletedBy:'admin' });
+    localStorage.setItem('oxeball_admin_v1', JSON.stringify(adminDb));
+  }catch(e){}
+
+  updateStats();
+  renderUsersTable();
+  renderRefTable();
+  renderDelLog();
+  notify('✕ User deleted: ' + (name||uid), 'err');
+}
+
+function exportUsers(){
+  let users = loadUsers();
+  let rows = Object.values(users);
+  let csv = 'UID,Username,Email,Method,Balance(OXE),GamesPlayed,TotalDeposits,RegisteredAt,LastLogin,Banned\n' +
+    rows.map(u=>`${u.uid},"${u.username||''}",${u.email||''},${u.method||''},${u.balance||0},${u.gamesPlayed||0},${u.totalDeposits||0},${u.registeredAt||''},${u.lastLogin||''},${u.banned||false}`).join('\n');
+  let blob = new Blob([csv],{type:'text/csv'});
+  let a = document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download='oxeball-users-'+new Date().toISOString().slice(0,10)+'.csv';
+  a.click();
+  notify('✓ Users CSV exported','ok');
+}
+
+// Auto-refresh every 30s in production (would poll API)
+setInterval(()=>{
+  if(loggedIn){
+    DB = loadData();
+    updateStats();
+    renderWdTable();
+    renderDepLog();
+  renderUsersTable();
+  renderRefTable();
+  renderDelLog();
+  }
+}, 30000);
+</script>
+</body>
+</html>
